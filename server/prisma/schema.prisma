@@ -1,0 +1,95 @@
+// schema.prisma — This file is the blueprint of your database.
+// Prisma reads this file to:
+//   1. Generate migrations (the actual SQL that creates tables in PostgreSQL)
+//   2. Generate the Prisma Client (the JS library you use to query the DB)
+
+// ─── GENERATOR ────────────────────────────────────────────────────────────────
+// Tells Prisma to generate a JavaScript/TypeScript client.
+// After any schema change, you run "npx prisma generate" to rebuild this client.
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─── DATASOURCE ───────────────────────────────────────────────────────────────
+// In Prisma v5 (which we use), connection config lives right here in schema.prisma.
+// DATABASE_URL → your pooler URL (used by the app at runtime)
+// directUrl → your direct URL (used by Prisma CLI for migrations)
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── ENUM ─────────────────────────────────────────────────────────────────────
+// An enum is a fixed set of allowed values for a field.
+// This means a status can ONLY be one of these 6 values — no typos possible.
+enum Status {
+  APPLIED
+  PHONE_SCREEN
+  INTERVIEW
+  OFFER
+  REJECTED
+  GHOSTED
+}
+
+// ─── MODELS ───────────────────────────────────────────────────────────────────
+// Each model = one table in PostgreSQL.
+// Each field = one column in that table.
+
+model User {
+  id           String        @id @default(cuid())  // cuid = unique ID like "clx4k2..."
+  name         String
+  email        String        @unique               // @unique = no two users share an email
+  password     String                              // will store bcrypt hash, never plaintext
+  reminderOn   Boolean       @default(true)
+  reminderDays Int           @default(7)
+  createdAt    DateTime      @default(now())
+
+  // Relations — these are NOT columns in the DB.
+  // They tell Prisma "a User has many Applications and many Reminders"
+  // so you can do: prisma.user.findUnique({ include: { applications: true } })
+  applications Application[]
+  reminders    Reminder[]
+}
+
+model Application {
+  id         String      @id @default(cuid())
+  userId     String                             // Foreign key — links to User.id
+  company    String
+  role       String
+  status     Status      @default(APPLIED)      // Uses the enum above
+  jdUrl      String?                            // ? means optional (nullable)
+  jdText     String?
+  notes      String?
+  deletedAt  DateTime?                          // Soft delete — null means NOT deleted
+  appliedAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt             // @updatedAt = auto-updated on every save
+
+  // Relations
+  user       User        @relation(fields: [userId], references: [id])
+  reminders  Reminder[]
+  aiScores   AiScore[]
+}
+
+model AiScore {
+  id            String      @id @default(cuid())
+  applicationId String
+  score         Int
+  matched       String[]    // String[] = PostgreSQL text array (list of matched keywords)
+  missing       String[]
+  suggestions   String[]
+  createdAt     DateTime    @default(now())
+
+  application   Application @relation(fields: [applicationId], references: [id])
+}
+
+model Reminder {
+  id            String      @id @default(cuid())
+  userId        String
+  applicationId String
+  sendAt        DateTime
+  sent          Boolean     @default(false)
+
+  user          User        @relation(fields: [userId], references: [id])
+  application   Application @relation(fields: [applicationId], references: [id])
+}
