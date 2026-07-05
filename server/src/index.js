@@ -113,11 +113,9 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Placeholder — will be replaced with: require("./routes/auth")
-// app.use("/api/auth", require("./routes/auth"));
-
 // Placeholder — will be replaced with: require("./routes/applications")
 // app.use("/api/applications", require("./routes/applications"));
+app.use("/api/auth", require("./routes/auth"));
 
 // Placeholder — will be replaced with: require("./routes/ai")
 // app.use("/api/ai", require("./routes/ai"));
