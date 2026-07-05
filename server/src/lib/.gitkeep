@@ -1,2 +1,0 @@
-# lib/ is for singletons and shared utilities
-# The Prisma client will live here as prisma.js (next step)
