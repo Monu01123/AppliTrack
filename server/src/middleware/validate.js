@@ -24,6 +24,19 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+// Rules for POST /api/applications
+// .optional() means the field can be missing from req.body entirely
+const applicationSchema = z.object({
+  company: z.string().min(1, "Company is required"),
+  role: z.string().min(1, "Role is required"),
+  status: z
+    .enum(["APPLIED", "PHONE_SCREEN", "INTERVIEW", "OFFER", "REJECTED", "GHOSTED"])
+    .optional(),
+  jdUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
+  jdText: z.string().optional(),
+  notes: z.string().optional(),
+});
+
 // ─── VALIDATE MIDDLEWARE ──────────────────────────────────────────────────────
 //
 // This is a "middleware factory" — a function that RETURNS a middleware.
@@ -54,4 +67,4 @@ const validate = (schema) => (req, res, next) => {
   next();
 };
 
-module.exports = { validate, registerSchema, loginSchema };
+module.exports = { validate, registerSchema, loginSchema, applicationSchema };
