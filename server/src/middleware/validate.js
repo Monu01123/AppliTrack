@@ -41,6 +41,13 @@ const applicationSchema = z.object({
 // .partial() makes all fields optional so you can update just one field (e.g. status) without sending company/role again!
 const updateApplicationSchema = applicationSchema.partial();
 
+// Rules for POST /api/ai/score/:id
+// Validates that the user sent their resume text (or skills summary)
+const scoreSchema = z.object({
+  resumeText: z.string().min(20, "Please provide at least 20 characters of resume text or skills"),
+  jdText: z.string().optional(), // Optional fallback if job description wasn't saved in the database
+});
+
 // ─── VALIDATE MIDDLEWARE ──────────────────────────────────────────────────────
 //
 // This is a "middleware factory" — a function that RETURNS a middleware.
@@ -71,4 +78,4 @@ const validate = (schema) => (req, res, next) => {
   next();
 };
 
-module.exports = { validate, registerSchema, loginSchema, applicationSchema, updateApplicationSchema };
+module.exports = { validate, registerSchema, loginSchema, applicationSchema, updateApplicationSchema, scoreSchema };
