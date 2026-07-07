@@ -119,8 +119,7 @@ app.use("/api/auth", require("./routes/auth"));
 
 app.use("/api/ai", require("./routes/ai"));
 
-// Placeholder — will be replaced with: require("./routes/analytics")
-// app.use("/api/analytics", require("./routes/analytics"));
+app.use("/api/analytics", require("./routes/analytics"));
 
 // 404 handler — catches any route that didn't match above
 app.use((req, res) => {
