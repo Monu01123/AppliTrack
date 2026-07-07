@@ -4,38 +4,50 @@ const prisma = require("../lib/prisma");
 
 // ─── GET ALL APPLICATIONS ─────────────────────────────────────────────────────
 // GET /api/applications?status=APPLIED&sort=appliedAt&order=desc&page=1&limit=10
+
 const getApplications = async (req, res, next) => {
   try {
-    // Destructure query params — if not provided, use these defaults
-    const { status, sort = "appliedAt", order = "desc", page = 1, limit = 10 } = req.query;
+    // Destructure query params — provide defaults if the user doesn't send them
+    // req.query values are always strings, so we convert page/limit to Number later
+    const {
+      status,               // optional filter e.g. "APPLIED"
+      sort = "appliedAt",   // which column to sort by
+      order = "desc",       // sort direction
+      page = 1,             // current page
+      limit = 10,           // items per page
+    } = req.query;
 
-    // Build the WHERE clause dynamically
-    // deletedAt: null → only return non-deleted applications (soft delete filter)
+    // Build the WHERE clause for Prisma
+    // userId: req.userId       → only show THIS user's applications
+    // deletedAt: null          → only show NOT soft-deleted applications
+    // status                   → add filter only if the query param exists
     const where = {
-      userId: req.userId,   // 🔑 only fetch THIS user's applications
-      deletedAt: null,      // 💡 soft delete: null means not deleted
+      userId: req.userId,
+      deletedAt: null,
+      ...(status && { status }), // spread only if status exists
+      // 💡 { ...( condition && { key: value } ) } is a common JS pattern
+      //    if condition is falsy, it spreads nothing; if truthy, adds the key
     };
 
-    // If a status filter was passed, add it to the where clause
-    if (status) where.status = status;
-
-    // Run both queries in parallel using Promise.all — faster than running one after another
-    // 💡 Promise.all([p1, p2]) waits for BOTH to finish, then returns [result1, result2]
+    // Run BOTH queries in parallel using Promise.all for better performance
+    // Instead of: await query1, then await query2 (sequential — slower)
+    // We do:      await both at the same time (parallel — faster)
     const [applications, total] = await Promise.all([
       prisma.application.findMany({
         where,
-        orderBy: { [sort]: order },          // e.g. { appliedAt: "desc" }
-        skip: (page - 1) * Number(limit),    // pagination: skip already-seen records
-        take: Number(limit),                 // how many to return this page
+        orderBy: { [sort]: order },     // dynamic key: { appliedAt: "desc" }
+        skip: (Number(page) - 1) * Number(limit), // skip records for pagination
+        take: Number(limit),            // how many to return
       }),
-      prisma.application.count({ where }),   // total count for pagination UI
+      prisma.application.count({ where }), // total matching records (for frontend pagination)
     ]);
 
     res.json({
       data: applications,
-      total,
+      total,                            // total number of matching records
       page: Number(page),
       limit: Number(limit),
+      totalPages: Math.ceil(total / Number(limit)), // how many pages exist
     });
   } catch (err) {
     next(err);
@@ -44,23 +56,25 @@ const getApplications = async (req, res, next) => {
 
 // ─── CREATE APPLICATION ───────────────────────────────────────────────────────
 // POST /api/applications
+
 const createApplication = async (req, res, next) => {
   try {
+    // Zod already validated req.body, so we trust these values
     const { company, role, status, jdUrl, jdText, notes } = req.body;
 
     const application = await prisma.application.create({
       data: {
-        userId: req.userId,   // 🔑 link to the logged-in user
+        userId: req.userId, // 🔑 links this application to the logged-in user
         company,
         role,
-        status,               // defaults to APPLIED if not sent (set in Prisma schema)
+        status,   // Prisma uses the enum — if undefined, defaults to "APPLIED" (from schema)
         jdUrl,
         jdText,
         notes,
       },
     });
 
-    res.status(201).json(application);
+    res.status(201).json(application); // 201 Created
   } catch (err) {
     next(err);
   }
@@ -68,15 +82,20 @@ const createApplication = async (req, res, next) => {
 
 // ─── GET SINGLE APPLICATION ───────────────────────────────────────────────────
 // GET /api/applications/:id
+
 const getApplication = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params; // :id from the URL
 
-    // findFirst (not findUnique) lets us filter by multiple conditions
-    // This ensures a user can't access another user's application by guessing IDs
+    // findFirst (not findUnique) lets us filter by BOTH id AND userId
+    // This prevents user A from reading user B's application by guessing an ID
     const application = await prisma.application.findFirst({
       where: { id, userId: req.userId, deletedAt: null },
-      include: { aiScores: true },  // also return the AI scores array
+      include: {
+        aiScores: {
+          orderBy: { createdAt: "desc" }, // most recent score first
+        },
+      },
     });
 
     if (!application) {
@@ -91,11 +110,15 @@ const getApplication = async (req, res, next) => {
 
 // ─── UPDATE APPLICATION ───────────────────────────────────────────────────────
 // PATCH /api/applications/:id
+// PATCH = partial update (only send the fields you want to change)
+// PUT   = full replacement (send ALL fields) — we use PATCH for flexibility
+
 const updateApplication = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // First check it exists AND belongs to this user
+    // First check the application exists and belongs to this user
+    // Without this, someone could send PATCH /applications/other-users-id
     const existing = await prisma.application.findFirst({
       where: { id, userId: req.userId, deletedAt: null },
     });
@@ -104,8 +127,8 @@ const updateApplication = async (req, res, next) => {
       return res.status(404).json({ error: "Application not found" });
     }
 
-    // Update only the fields sent in req.body (partial update = PATCH behavior)
-    // 💡 PATCH vs PUT: PATCH updates partial fields, PUT replaces the whole resource
+    // Update only the fields present in req.body
+    // Prisma ignores keys that aren't in your schema, so req.body is safe here
     const updated = await prisma.application.update({
       where: { id },
       data: req.body,
@@ -119,8 +142,15 @@ const updateApplication = async (req, res, next) => {
 
 // ─── SOFT DELETE APPLICATION ──────────────────────────────────────────────────
 // DELETE /api/applications/:id
-// 🎯 Soft delete = set deletedAt timestamp instead of removing the row
-// Why? Keeps history, allows undo, prevents accidental data loss
+//
+// 🎯 Soft delete pattern: instead of removing the row from the database,
+// we set "deletedAt" to the current timestamp. The row stays in the DB.
+// Benefits:
+//   - Users can "undo" a delete
+//   - You keep analytics/history data
+//   - Avoids accidental data loss
+// All queries filter { deletedAt: null } to exclude soft-deleted records.
+
 const deleteApplication = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -133,12 +163,13 @@ const deleteApplication = async (req, res, next) => {
       return res.status(404).json({ error: "Application not found" });
     }
 
+    // Set deletedAt = now — this "hides" the application from all queries
     await prisma.application.update({
       where: { id },
-      data: { deletedAt: new Date() },  // set to NOW — this is the soft delete
+      data: { deletedAt: new Date() },
     });
 
-    res.json({ message: "Application deleted" });
+    res.json({ message: "Application deleted successfully" });
   } catch (err) {
     next(err);
   }

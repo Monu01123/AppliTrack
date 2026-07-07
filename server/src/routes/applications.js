@@ -1,34 +1,33 @@
 // src/routes/applications.js
 //
-// All routes are protected — verifyToken runs first on every request
-// 💡 Notice how clean this is: no logic here, just wiring
+// All routes here are PROTECTED — every request must have a valid JWT.
+// verifyToken runs first, attaches req.userId, then the controller runs.
 
 const express = require("express");
 const router = express.Router();
+const verifyToken = require("../middleware/verifyToken.js");
+const { getApplications, createApplication, getApplication, updateApplication, deleteApplication } = require("../controllers/applications.controller.js");
+const { validate, applicationSchema } = require("../middleware/validate.js");
 
-const verifyToken = require("../middleware/verifyToken");
-const { validate, applicationSchema } = require("../middleware/validate");
-const {
-  getApplications,
-  createApplication,
-  getApplication,
-  updateApplication,
-  deleteApplication,
-} = require("../controllers/applications.controller");
 
-// GET /api/applications — list with filters, sort, pagination
-router.get("/", verifyToken, getApplications);
+// ── ROUTES ────────────────────────────────────────────────────────────────────
+// Pattern: router.METHOD("path", verifyToken, optionalValidation, controller)
 
-// POST /api/applications — create new (validate body first)
-router.post("/", verifyToken, validate(applicationSchema), createApplication);
+// STEP 4: GET /  → list all applications (with filter/sort/pagination)
+// Middleware chain: verifyToken, then getApplications
+route.get("/applications", validate(applicationSchema), getApplications);
 
-// GET /api/applications/:id — get one by id
-router.get("/:id", verifyToken, getApplication);
+// STEP 5: POST /  → create a new application
+// Middleware chain: verifyToken, validate(applicationSchema), then createApplication
+route.post("/Create-application", validate(applicationSchema), verifyToken, createApplication);
 
-// PATCH /api/applications/:id — partial update
-router.patch("/:id", verifyToken, updateApplication);
+// STEP 6: GET /:id  → get one application by id
+route.get("/get-application/:id", validate(applicationSchema), getApplication);
 
-// DELETE /api/applications/:id — soft delete
-router.delete("/:id", verifyToken, deleteApplication);
+// STEP 7: PATCH /:id  → update an application
+route.get("/upd-application/:id", validate(applicationSchema), updateApplication);
+
+// STEP 8: DELETE /:id  → soft delete an application
+route.get("/del-application/:id", validate(applicationSchema), deleteApplication);
 
 module.exports = router;
