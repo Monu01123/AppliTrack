@@ -37,6 +37,10 @@ const applicationSchema = z.object({
   notes: z.string().optional(),
 });
 
+// Rules for PATCH /api/applications/:id
+// .partial() makes all fields optional so you can update just one field (e.g. status) without sending company/role again!
+const updateApplicationSchema = applicationSchema.partial();
+
 // ─── VALIDATE MIDDLEWARE ──────────────────────────────────────────────────────
 //
 // This is a "middleware factory" — a function that RETURNS a middleware.
@@ -67,4 +71,4 @@ const validate = (schema) => (req, res, next) => {
   next();
 };
 
-module.exports = { validate, registerSchema, loginSchema, applicationSchema };
+module.exports = { validate, registerSchema, loginSchema, applicationSchema, updateApplicationSchema };
