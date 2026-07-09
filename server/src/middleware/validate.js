@@ -48,6 +48,12 @@ const scoreSchema = z.object({
   jdText: z.string().optional(), // Optional fallback if job description wasn't saved in the database
 });
 
+// Rules for POST /api/reminders
+const reminderSchema = z.object({
+  applicationId: z.string().min(1, "Application ID is required"),
+  daysFromNow: z.number().int().min(1, "Days must be at least 1").optional().default(7),
+});
+
 // ─── VALIDATE MIDDLEWARE ──────────────────────────────────────────────────────
 //
 // This is a "middleware factory" — a function that RETURNS a middleware.
@@ -78,4 +84,4 @@ const validate = (schema) => (req, res, next) => {
   next();
 };
 
-module.exports = { validate, registerSchema, loginSchema, applicationSchema, updateApplicationSchema, scoreSchema };
+module.exports = { validate, registerSchema, loginSchema, applicationSchema, updateApplicationSchema, scoreSchema, reminderSchema };

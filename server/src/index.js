@@ -120,6 +120,7 @@ app.use("/api/auth", require("./routes/auth"));
 app.use("/api/ai", require("./routes/ai"));
 
 app.use("/api/analytics", require("./routes/analytics"));
+app.use("/api/reminders", require("./routes/reminders"));
 
 // 404 handler — catches any route that didn't match above
 app.use((req, res) => {
@@ -131,9 +132,12 @@ app.use((req, res) => {
 // Any route that calls next(err) lands here.
 app.use(errorHandler);
 
+const { startCronJobs } = require("./lib/cron");
+
 // ─── 9. START SERVER ─────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`   Environment: ${process.env.NODE_ENV}`);
   console.log(`   Health check: http://localhost:${PORT}/api/health`);
+  startCronJobs();
 });
