@@ -12,6 +12,52 @@ export const AiScoreModal = ({ isOpen, onClose, application }) => {
   const [scoreResult, setScoreResult] = useState(null);
   const [error, setError] = useState("");
 
+  // Resume Version Manager State
+  const [savedResumes, setSavedResumes] = useState([]);
+  const [selectedResumeId, setSelectedResumeId] = useState("");
+  const [newLabel, setNewLabel] = useState("");
+  const [savingResume, setSavingResume] = useState(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      api
+        .get("/resumes")
+        .then((res) => setSavedResumes(res.data || []))
+        .catch((err) => console.error("Error loading resumes:", err));
+    }
+  }, [isOpen]);
+
+  const handleSelectResume = (id) => {
+    setSelectedResumeId(id);
+    if (!id) return;
+    const found = savedResumes.find((r) => r.id === id);
+    if (found) {
+      setResumeText(found.content);
+    }
+  };
+
+  const handleSaveResume = async () => {
+    if (!newLabel.trim() || !resumeText.trim()) {
+      setError("Please enter a label and resume text to save.");
+      return;
+    }
+    setSavingResume(true);
+    setError("");
+    try {
+      const res = await api.post("/resumes", {
+        label: newLabel.trim(),
+        content: resumeText,
+      });
+      setSavedResumes((prev) => [res.data, ...prev]);
+      setSelectedResumeId(res.data.id);
+      setNewLabel("");
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to save resume version.");
+    } finally {
+      setSavingResume(false);
+    }
+  };
+
   if (!isOpen || !application) return null;
 
   const handleScore = async (e) => {
@@ -73,18 +119,58 @@ export const AiScoreModal = ({ isOpen, onClose, application }) => {
               </div>
             )}
 
+            {/* Saved Resumes Dropdown */}
+            {savedResumes.length > 0 && (
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                  Select Saved Resume ({savedResumes.length}/5)
+                </label>
+                <select
+                  value={selectedResumeId}
+                  onChange={(e) => handleSelectResume(e.target.value)}
+                  className="glass-input bg-slate-900 text-sm"
+                >
+                  <option value="">-- Or paste fresh text below --</option>
+                  {savedResumes.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.label} (Saved {new Date(r.createdAt).toLocaleDateString()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                Paste Your Resume Text *
+                Resume Text *
               </label>
               <textarea
-                rows={8}
+                rows={6}
                 required
                 placeholder="Paste your plain resume text here..."
                 value={resumeText}
                 onChange={(e) => setResumeText(e.target.value)}
                 className="glass-input text-sm resize-none font-mono"
               />
+            </div>
+
+            {/* Save Resume Bar */}
+            <div className="flex items-center gap-2 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+              <input
+                type="text"
+                placeholder="Save label (e.g. Fullstack v1)"
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                className="glass-input text-xs py-1.5 flex-1"
+              />
+              <button
+                type="button"
+                onClick={handleSaveResume}
+                disabled={savingResume || savedResumes.length >= 5}
+                className="px-3 py-1.5 rounded-lg bg-sky-500/20 border border-sky-500/40 text-sky-300 hover:bg-sky-500/30 text-xs font-medium disabled:opacity-50"
+              >
+                {savingResume ? "Saving..." : "Save Resume"}
+              </button>
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

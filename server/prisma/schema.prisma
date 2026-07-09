@@ -50,6 +50,7 @@ model User {
   // so you can do: prisma.user.findUnique({ include: { applications: true } })
   applications Application[]
   reminders    Reminder[]
+  resumes      Resume[]
 }
 
 model Application {
@@ -92,4 +93,14 @@ model Reminder {
 
   user          User        @relation(fields: [userId], references: [id])
   application   Application @relation(fields: [applicationId], references: [id])
+}
+
+model Resume {
+  id        String   @id @default(cuid())
+  userId    String
+  label     String   // e.g. "Fullstack v1"
+  content   String   // full text of resume
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
 }
