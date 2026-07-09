@@ -14,7 +14,8 @@ export const RemindersPage = () => {
     try {
       setLoading(true);
       const res = await api.get("/reminders");
-      setReminders(res.data);
+      const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      setReminders(list);
     } catch (err) {
       console.error("Failed to fetch reminders:", err);
     } finally {

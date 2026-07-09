@@ -47,7 +47,8 @@ export const DashboardPage = () => {
     try {
       setLoading(true);
       const res = await api.get("/applications");
-      setApplications(res.data);
+      const appsList = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      setApplications(appsList);
     } catch (err) {
       console.error("Error loading applications:", err);
     } finally {
@@ -63,12 +64,14 @@ export const DashboardPage = () => {
   const handleSaveApplication = async (formData) => {
     if (editingApp) {
       const res = await api.put(`/applications/${editingApp.id}`, formData);
+      const updatedApp = res.data;
       setApplications((prev) =>
-        prev.map((item) => (item.id === editingApp.id ? res.data : item))
+        prev.map((item) => (item.id === editingApp.id ? updatedApp : item))
       );
     } else {
       const res = await api.post("/applications", formData);
-      setApplications((prev) => [res.data, ...prev]);
+      const newApp = res.data;
+      setApplications((prev) => [newApp, ...prev]);
     }
   };
 
@@ -84,10 +87,10 @@ export const DashboardPage = () => {
   };
 
   // Filtered Applications
-  const filteredApps = applications.filter(
+  const filteredApps = (Array.isArray(applications) ? applications : []).filter(
     (app) =>
-      app.company.toLowerCase().includes(search.toLowerCase()) ||
-      app.role.toLowerCase().includes(search.toLowerCase())
+      app.company?.toLowerCase().includes(search.toLowerCase()) ||
+      app.role?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
