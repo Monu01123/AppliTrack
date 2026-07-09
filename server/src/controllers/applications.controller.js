@@ -62,7 +62,7 @@ const getApplications = async (req, res, next) => {
 const createApplication = async (req, res, next) => {
   try {
     // Zod already validated req.body, so we trust these values
-    const { company, role, status, jdUrl, jdText, notes, tags } = req.body;
+    const { company, role, status, jdUrl, jdText, notes, tags, interviewDate } = req.body;
 
     const application = await prisma.application.create({
       data: {
@@ -74,6 +74,7 @@ const createApplication = async (req, res, next) => {
         jdText,
         notes,
         tags: tags || [],
+        interviewDate: interviewDate ? new Date(interviewDate) : null,
       },
     });
 
@@ -130,11 +131,18 @@ const updateApplication = async (req, res, next) => {
       return res.status(404).json({ error: "Application not found" });
     }
 
+    const updateData = { ...req.body };
+    if (updateData.interviewDate !== undefined) {
+      updateData.interviewDate = updateData.interviewDate
+        ? new Date(updateData.interviewDate)
+        : null;
+    }
+
     // Update only the fields present in req.body
     // Prisma ignores keys that aren't in your schema, so req.body is safe here
     const updated = await prisma.application.update({
       where: { id },
-      data: req.body,
+      data: updateData,
     });
 
     res.json(updated);

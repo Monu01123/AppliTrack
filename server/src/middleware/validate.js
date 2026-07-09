@@ -36,6 +36,7 @@ const applicationSchema = z.object({
   jdText: z.string().optional(),
   notes: z.string().optional(),
   tags: z.array(z.string()).optional(),
+  interviewDate: z.string().optional().nullable(),
 });
 
 // Rules for PATCH /api/applications/:id

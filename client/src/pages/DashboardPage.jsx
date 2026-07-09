@@ -96,6 +96,46 @@ export const DashboardPage = () => {
     )
   );
 
+  // Interview Date Countdown Badge Helper
+  const getInterviewCountdownBadge = (dateStr) => {
+    if (!dateStr) return null;
+    const target = new Date(dateStr);
+    if (isNaN(target)) return null;
+    const now = new Date();
+    const diffMs = target - now;
+    const diffHours = diffMs / (1000 * 60 * 60);
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    const isToday =
+      target.getDate() === now.getDate() &&
+      target.getMonth() === now.getMonth() &&
+      target.getFullYear() === now.getFullYear();
+
+    if (isToday) {
+      return {
+        text: "Interview TODAY 🎯",
+        style: "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 animate-pulse font-bold",
+      };
+    }
+    if (diffMs < 0) {
+      return {
+        text: "Interview passed",
+        style: "bg-slate-800 border-slate-700 text-slate-400",
+      };
+    }
+    if (diffHours < 24) {
+      const hrs = Math.max(1, Math.round(diffHours));
+      return {
+        text: `Interview in ~${hrs} hr${hrs > 1 ? "s" : ""}`,
+        style: "bg-amber-500/20 border-amber-500/50 text-amber-300 font-semibold",
+      };
+    }
+    return {
+      text: `Interview in ${diffDays} day${diffDays > 1 ? "s" : ""}`,
+      style: "bg-sky-500/20 border-sky-500/50 text-sky-300 font-semibold",
+    };
+  };
+
   // Filtered Applications
   const filteredApps = (Array.isArray(applications) ? applications : []).filter(
     (app) => {
@@ -252,6 +292,17 @@ export const DashboardPage = () => {
                       key={app.id}
                       className="glass-card p-4 hover:border-slate-700 transition-all space-y-3 group"
                     >
+                      {app.interviewDate && (() => {
+                        const badge = getInterviewCountdownBadge(app.interviewDate);
+                        if (!badge) return null;
+                        return (
+                          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs ${badge.style}`}>
+                            <span>📅</span>
+                            <span>{badge.text}</span>
+                          </div>
+                        );
+                      })()}
+
                       <div className="flex items-start justify-between">
                         <div>
                           <h4 className="font-bold text-white text-sm">
@@ -350,7 +401,20 @@ export const DashboardPage = () => {
                   const col = COLUMNS.find((c) => c.id === app.status) || COLUMNS[0];
                   return (
                     <tr key={app.id} className="hover:bg-slate-900/40 transition-colors">
-                      <td className="p-4 font-bold text-white">{app.company}</td>
+                      <td className="p-4 font-bold text-white">
+                        <div className="flex items-center gap-2">
+                          <span>{app.company}</span>
+                          {app.interviewDate && (() => {
+                            const badge = getInterviewCountdownBadge(app.interviewDate);
+                            if (!badge) return null;
+                            return (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] ${badge.style}`}>
+                                📅 {badge.text}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                      </td>
                       <td className="p-4 text-slate-300">{app.role}</td>
                       <td className="p-4">
                         <span

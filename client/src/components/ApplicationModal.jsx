@@ -22,9 +22,18 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState("");
+  const [interviewDate, setInterviewDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const SUGGESTED_TAGS = ["Referral", "Cold Apply", "Dream Company", "Startup", "Remote"];
+
+  const formatDateTimeLocal = (isoString) => {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    if (isNaN(d)) return "";
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -34,6 +43,7 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
       setJdText(initialData.jdText || "");
       setNotes(initialData.notes || "");
       setTags(initialData.tags || []);
+      setInterviewDate(formatDateTimeLocal(initialData.interviewDate));
     } else {
       setCompany("");
       setRole("");
@@ -41,6 +51,7 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
       setJdText("");
       setNotes("");
       setTags([]);
+      setInterviewDate("");
     }
     setTagInput("");
   }, [initialData, isOpen]);
@@ -66,7 +77,15 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
     e.preventDefault();
     setSubmitting(true);
     try {
-      await onSave({ company, role, status, jdText, notes, tags });
+      await onSave({
+        company,
+        role,
+        status,
+        jdText,
+        notes,
+        tags,
+        interviewDate: interviewDate || null,
+      });
       onClose();
     } catch (err) {
       console.error("Failed to save application:", err);
@@ -139,6 +158,28 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Scheduled Interview Date & Time */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center justify-between">
+              <span>Scheduled Interview Date / Time (Optional)</span>
+              {interviewDate && (
+                <button
+                  type="button"
+                  onClick={() => setInterviewDate("")}
+                  className="text-[10px] text-rose-400 hover:text-rose-300"
+                >
+                  Clear Date
+                </button>
+              )}
+            </label>
+            <input
+              type="datetime-local"
+              value={interviewDate}
+              onChange={(e) => setInterviewDate(e.target.value)}
+              className="glass-input text-sm bg-slate-900"
+            />
           </div>
 
           <div>
