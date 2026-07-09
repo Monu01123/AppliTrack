@@ -53,12 +53,29 @@ const getAnalyticsSummary = async (req, res, next) => {
     const interviewRate = total === 0 ? "0.0%" : ((interviewCount + offerCount) / total * 100).toFixed(1) + "%";
     const offerRate = total === 0 ? "0.0%" : (offerCount / total * 100).toFixed(1) + "%";
 
+    const allApps = await prisma.application.findMany({
+      where: { userId: req.userId, deletedAt: null },
+      select: { tags: true },
+    });
+
+    const tagMap = {};
+    allApps.forEach((app) => {
+      (app.tags || []).forEach((t) => {
+        tagMap[t] = (tagMap[t] || 0) + 1;
+      });
+    });
+
+    const tagCounts = Object.entries(tagMap)
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count);
+
     res.json({
       total,
       byStatus,
       responseRate,
       interviewRate,
       offerRate,
+      tagCounts,
     });
 
   } catch (err) {

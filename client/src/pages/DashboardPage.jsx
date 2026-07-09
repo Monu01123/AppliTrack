@@ -34,6 +34,7 @@ export const DashboardPage = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [selectedTag, setSelectedTag] = useState("");
   const [view, setView] = useState("kanban"); // "kanban" | "table"
 
   // Modal States
@@ -86,11 +87,25 @@ export const DashboardPage = () => {
     }
   };
 
+  // Collect all unique tags across applications
+  const allTags = Array.from(
+    new Set(
+      (Array.isArray(applications) ? applications : []).flatMap(
+        (app) => app.tags || []
+      )
+    )
+  );
+
   // Filtered Applications
   const filteredApps = (Array.isArray(applications) ? applications : []).filter(
-    (app) =>
-      app.company?.toLowerCase().includes(search.toLowerCase()) ||
-      app.role?.toLowerCase().includes(search.toLowerCase())
+    (app) => {
+      const matchesSearch =
+        app.company?.toLowerCase().includes(search.toLowerCase()) ||
+        app.role?.toLowerCase().includes(search.toLowerCase());
+      const matchesTag =
+        !selectedTag || (app.tags && app.tags.includes(selectedTag));
+      return matchesSearch && matchesTag;
+    }
   );
 
   return (
@@ -150,6 +165,38 @@ export const DashboardPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Tag Filter Chip Bar */}
+      {allTags.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <span className="text-xs font-semibold text-slate-400 uppercase shrink-0">
+            Filter by Tag:
+          </span>
+          <button
+            onClick={() => setSelectedTag("")}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+              !selectedTag
+                ? "bg-sky-500 text-white shadow"
+                : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
+            }`}
+          >
+            All ({applications.length})
+          </button>
+          {allTags.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => setSelectedTag(selectedTag === tag ? "" : tag)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                selectedTag === tag
+                  ? "bg-sky-500 text-white shadow"
+                  : "bg-slate-900 border border-slate-800 text-slate-300 hover:border-sky-500/50"
+              }`}
+            >
+              #{tag}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Main Content Area */}
       {loading ? (
@@ -234,6 +281,24 @@ export const DashboardPage = () => {
                           </button>
                         </div>
                       </div>
+
+                      {/* Tag Chips */}
+                      {app.tags && app.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {app.tags.map((t) => (
+                            <button
+                              key={t}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTag(selectedTag === t ? "" : t);
+                              }}
+                              className="px-2 py-0.5 rounded-full bg-slate-800/80 border border-slate-700/60 text-[10px] text-sky-300 hover:border-sky-500/50"
+                            >
+                              #{t}
+                            </button>
+                          ))}
+                        </div>
+                      )}
 
                       {app.notes && (
                         <p className="text-xs text-slate-400 bg-slate-950/60 p-2 rounded-lg border border-slate-800/60 line-clamp-2">

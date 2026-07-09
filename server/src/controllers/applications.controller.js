@@ -15,6 +15,7 @@ const getApplications = async (req, res, next) => {
       order = "desc",       // sort direction
       page = 1,             // current page
       limit = 10,           // items per page
+      tag,                  // optional tag filter
     } = req.query;
 
     // Build the WHERE clause for Prisma
@@ -25,6 +26,7 @@ const getApplications = async (req, res, next) => {
       userId: req.userId,
       deletedAt: null,
       ...(status && { status }), // spread only if status exists
+      ...(tag && { tags: { has: tag } }),
       // 💡 { ...( condition && { key: value } ) } is a common JS pattern
       //    if condition is falsy, it spreads nothing; if truthy, adds the key
     };
@@ -60,7 +62,7 @@ const getApplications = async (req, res, next) => {
 const createApplication = async (req, res, next) => {
   try {
     // Zod already validated req.body, so we trust these values
-    const { company, role, status, jdUrl, jdText, notes } = req.body;
+    const { company, role, status, jdUrl, jdText, notes, tags } = req.body;
 
     const application = await prisma.application.create({
       data: {
@@ -71,6 +73,7 @@ const createApplication = async (req, res, next) => {
         jdUrl,
         jdText,
         notes,
+        tags: tags || [],
       },
     });
 

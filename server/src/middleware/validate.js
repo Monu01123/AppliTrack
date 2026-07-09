@@ -35,6 +35,7 @@ const applicationSchema = z.object({
   jdUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
   jdText: z.string().optional(),
   notes: z.string().optional(),
+  tags: z.array(z.string()).optional(),
 });
 
 // Rules for PATCH /api/applications/:id

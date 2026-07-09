@@ -62,6 +62,7 @@ model Application {
   jdUrl      String?                            // ? means optional (nullable)
   jdText     String?
   notes      String?
+  tags       String[]    @default([])
   deletedAt  DateTime?                          // Soft delete — null means NOT deleted
   appliedAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt             // @updatedAt = auto-updated on every save

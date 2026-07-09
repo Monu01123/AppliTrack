@@ -258,6 +258,43 @@ export const AnalyticsPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Tag Distribution & Performance Highlights */}
+      {data.tagCounts && data.tagCounts.length > 0 && (
+        <div className="glass-card p-6 space-y-4 border border-slate-800">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-emerald-400" />
+              Tag Distribution & Sourcing Insights
+            </h3>
+            <span className="text-xs text-slate-400">
+              Categorized by custom application labels
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            {data.tagCounts.map((tc) => (
+              <div
+                key={tc.tag}
+                className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between"
+              >
+                <span className="text-xs font-semibold text-sky-400 truncate">
+                  #{tc.tag}
+                </span>
+                <div className="flex items-baseline justify-between mt-2">
+                  <span className="text-2xl font-extrabold text-white">
+                    {tc.count}
+                  </span>
+                  <span className="text-[10px] text-slate-500">
+                    {data.total > 0
+                      ? Math.round((tc.count / data.total) * 100) + "% of total"
+                      : ""}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -20,7 +20,11 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
   const [status, setStatus] = useState("APPLIED");
   const [jdText, setJdText] = useState("");
   const [notes, setNotes] = useState("");
+  const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const SUGGESTED_TAGS = ["Referral", "Cold Apply", "Dream Company", "Startup", "Remote"];
 
   useEffect(() => {
     if (initialData) {
@@ -29,14 +33,32 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
       setStatus(initialData.status || "APPLIED");
       setJdText(initialData.jdText || "");
       setNotes(initialData.notes || "");
+      setTags(initialData.tags || []);
     } else {
       setCompany("");
       setRole("");
       setStatus("APPLIED");
       setJdText("");
       setNotes("");
+      setTags([]);
     }
+    setTagInput("");
   }, [initialData, isOpen]);
+
+  const handleAddTag = (t) => {
+    const clean = t.trim();
+    if (clean && !tags.includes(clean)) {
+      setTags([...tags, clean]);
+    }
+    setTagInput("");
+  };
+
+  const handleKeyDownTag = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddTag(tagInput);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -44,7 +66,7 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
     e.preventDefault();
     setSubmitting(true);
     try {
-      await onSave({ company, role, status, jdText, notes });
+      await onSave({ company, role, status, jdText, notes, tags });
       onClose();
     } catch (err) {
       console.error("Failed to save application:", err);
@@ -131,6 +153,65 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
               onChange={(e) => setJdText(e.target.value)}
               className="glass-input resize-none text-sm"
             />
+          </div>
+
+          {/* Tags & Custom Labels Section */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+              Tags & Custom Labels
+            </label>
+            <div className="flex items-center gap-2 mb-2">
+              <input
+                type="text"
+                placeholder="Type tag & press Enter..."
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleKeyDownTag}
+                className="glass-input text-xs py-1.5 flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => handleAddTag(tagInput)}
+                className="px-3 py-1.5 rounded-lg bg-sky-500/20 border border-sky-500/40 text-sky-300 hover:bg-sky-500/30 text-xs font-medium"
+              >
+                Add Tag
+              </button>
+            </div>
+
+            {/* Suggested Tags Quick-Add */}
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {SUGGESTED_TAGS.map((st) => (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => handleAddTag(st)}
+                  className="px-2 py-0.5 rounded-full bg-slate-800/80 border border-slate-700 text-[10px] text-slate-300 hover:border-sky-500/50 hover:text-white"
+                >
+                  + {st}
+                </button>
+              ))}
+            </div>
+
+            {/* Current Chips */}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {tags.map((t) => (
+                  <span
+                    key={t}
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-500/15 border border-sky-500/30 text-sky-300 text-xs font-medium"
+                  >
+                    {t}
+                    <button
+                      type="button"
+                      onClick={() => setTags(tags.filter((item) => item !== t))}
+                      className="text-sky-400 hover:text-white ml-0.5"
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>
