@@ -12,10 +12,18 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem("hireiq_user");
     const savedToken = localStorage.getItem("hireiq_token");
-    if (savedToken) {
+    if (savedToken && savedToken !== "undefined" && savedToken !== "null") {
       setAccessToken(savedToken);
     }
-    return savedUser ? JSON.parse(savedUser) : null;
+    if (!savedUser || savedUser === "undefined" || savedUser === "null") {
+      return null;
+    }
+    try {
+      return JSON.parse(savedUser);
+    } catch (e) {
+      localStorage.removeItem("hireiq_user");
+      return null;
+    }
   });
   const [loading, setLoading] = useState(true);
 
@@ -23,10 +31,12 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       try {
         const res = await api.post("/auth/refresh");
-        setAccessToken(res.data.accessToken);
-        setUser(res.data.user);
-        localStorage.setItem("hireiq_token", res.data.accessToken);
-        localStorage.setItem("hireiq_user", JSON.stringify(res.data.user));
+        if (res.data?.accessToken && res.data?.user) {
+          setAccessToken(res.data.accessToken);
+          setUser(res.data.user);
+          localStorage.setItem("hireiq_token", res.data.accessToken);
+          localStorage.setItem("hireiq_user", JSON.stringify(res.data.user));
+        }
       } catch (err) {
         // If refresh fails but we already loaded user from localStorage above,
         // we can keep localStorage user if token is still valid, otherwise clear it.
