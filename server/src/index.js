@@ -12,6 +12,7 @@
 // dotenv reads the .env file and injects every key into process.env
 // MUST be the very first import so every module below can access process.env
 require("dotenv").config();
+require("dns").setDefaultResultOrder("ipv4first");
 
 // ─── 2. THIRD-PARTY IMPORTS ──────────────────────────────────────────────────
 const express = require("express");

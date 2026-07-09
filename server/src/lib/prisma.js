@@ -12,6 +12,9 @@
 // When nodemon restarts, Node.js re-runs all files — but "global" persists
 // across restarts. Without this, each nodemon restart would leak a connection.
 
+const dns = require("dns");
+dns.setDefaultResultOrder("ipv4first");
+
 const { PrismaClient } = require("@prisma/client");
 
 // In production: just create the client directly

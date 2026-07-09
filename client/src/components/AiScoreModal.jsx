@@ -25,7 +25,7 @@ export const AiScoreModal = ({ isOpen, onClose, application }) => {
     setScoreResult(null);
 
     try {
-      const res = await api.post(`/ai/score/${application.id}`, {
+      const res = await api.post(`/applications/${application.id}/score`, {
         resumeText,
       });
       setScoreResult(res.data.aiScore);
