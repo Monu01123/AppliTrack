@@ -27,9 +27,10 @@ router.post("/", verifyToken, validate(applicationSchema), createApplication);
 // STEP 6: GET /:id  → get one application by id
 router.get("/:id", verifyToken, getApplication);
 
-// STEP 7: PATCH /:id  → update an application
-// Use PATCH method (for partial updates), validate new body data with updateApplicationSchema (.partial())
+// STEP 7: PATCH /:id and PUT /:id  → update an application
+// Use PATCH or PUT method (for updates), validate new body data with updateApplicationSchema (.partial())
 router.patch("/:id", verifyToken, validate(updateApplicationSchema), updateApplication);
+router.put("/:id", verifyToken, validate(updateApplicationSchema), updateApplication);
 
 // STEP 8: DELETE /:id  → soft delete an application
 // Use DELETE method! No body validation needed.

@@ -63,7 +63,7 @@ export const DashboardPage = () => {
   // Save or Update Application
   const handleSaveApplication = async (formData) => {
     if (editingApp) {
-      const res = await api.put(`/applications/${editingApp.id}`, formData);
+      const res = await api.patch(`/applications/${editingApp.id}`, formData);
       const updatedApp = res.data;
       setApplications((prev) =>
         prev.map((item) => (item.id === editingApp.id ? updatedApp : item))
