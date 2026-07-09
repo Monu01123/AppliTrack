@@ -73,14 +73,27 @@ export const AnalyticsPage = () => {
     );
   }
 
-  // Prepare data for Recharts
-  const pieData = Object.entries(data.countsByStatus || {}).map(([status, count]) => ({
-    name: status.replace("_", " "),
-    statusKey: status,
-    value: count,
-  }));
+  // Prepare data for Recharts matching backend schema
+  const totalApps = data.total ?? data.totalApplications ?? 0;
+  const interviewRate = data.interviewRate ?? data.conversionRates?.interviewRate ?? "0%";
+  const offerRate = data.offerRate ?? data.conversionRates?.offerRate ?? "0%";
+
+  const pieData = Array.isArray(data.byStatus)
+    ? data.byStatus.map((item) => ({
+        name: item.name.replace("_", " "),
+        statusKey: item.name,
+        value: item.count,
+      }))
+    : Object.entries(data.countsByStatus || {}).map(([status, count]) => ({
+        name: status.replace("_", " "),
+        statusKey: status,
+        value: count,
+      }));
 
   const barData = pieData;
+  const activePipelineCount = pieData
+    .filter((d) => d.statusKey === "PHONE_SCREEN" || d.statusKey === "INTERVIEW")
+    .reduce((acc, curr) => acc + curr.value, 0);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
@@ -105,7 +118,7 @@ export const AnalyticsPage = () => {
             <Briefcase className="w-5 h-5 text-sky-400" />
           </div>
           <p className="text-3xl font-extrabold text-white mt-2">
-            {data.totalApplications || 0}
+            {totalApps}
           </p>
         </div>
 
@@ -117,7 +130,7 @@ export const AnalyticsPage = () => {
             <TrendingUp className="w-5 h-5 text-amber-400" />
           </div>
           <p className="text-3xl font-extrabold text-white mt-2">
-            {data.conversionRates?.interviewRate || "0%"}
+            {interviewRate}
           </p>
         </div>
 
@@ -129,7 +142,7 @@ export const AnalyticsPage = () => {
             <Award className="w-5 h-5 text-emerald-400" />
           </div>
           <p className="text-3xl font-extrabold text-white mt-2">
-            {data.conversionRates?.offerRate || "0%"}
+            {offerRate}
           </p>
         </div>
 
@@ -141,8 +154,7 @@ export const AnalyticsPage = () => {
             <PieIcon className="w-5 h-5 text-purple-400" />
           </div>
           <p className="text-3xl font-extrabold text-white mt-2">
-            {(data.countsByStatus?.PHONE_SCREEN || 0) +
-              (data.countsByStatus?.INTERVIEW || 0)}
+            {activePipelineCount}
           </p>
         </div>
       </div>
