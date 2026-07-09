@@ -28,7 +28,14 @@ export const AiScoreModal = ({ isOpen, onClose, application }) => {
       const res = await api.post(`/applications/${application.id}/score`, {
         resumeText,
       });
-      setScoreResult(res.data.aiScore);
+      const raw = res.data.aiScore || res.data;
+      const numericScore = raw.overallScore ?? raw.score ?? 75;
+      setScoreResult({
+        overallScore: numericScore,
+        verdict: raw.verdict || (numericScore >= 80 ? "Excellent Match" : numericScore >= 60 ? "Good Match" : "Needs Improvement"),
+        strengths: raw.strengths || raw.matched || [],
+        missingSkills: raw.missingSkills || raw.missing || [],
+      });
     } catch (err) {
       setError(err.response?.data?.error || "AI scoring failed. Ensure your Gemini API Key is valid.");
     } finally {
