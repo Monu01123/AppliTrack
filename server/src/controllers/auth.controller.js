@@ -17,7 +17,7 @@ const generateAccessToken = (userId) => {
   return jwt.sign(
     { userId },                           // payload — what we store inside the token
     process.env.ACCESS_TOKEN_SECRET,      // secret key — used to sign + verify
-    { expiresIn: "15m" }                  // token becomes invalid after 15 minutes
+    { expiresIn: "7d" }                   // token valid for 7 days
   );
 };
 
