@@ -8,17 +8,26 @@
 
 const express = require("express");
 const router = express.Router();
+const rateLimit = require("express-rate-limit");
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,                  // Limit each IP to 10 attempts per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many authentication attempts. Please try again in 15 minutes." },
+});
 
 const { register, login, refresh, logout } = require("../controllers/auth.controller");
 const { validate, registerSchema, loginSchema } = require("../middleware/validate");
 
 // POST /api/auth/register
 // Flow: validate req.body → register controller
-router.post("/register", validate(registerSchema), register);
+router.post("/register", authLimiter, validate(registerSchema), register);
 
 // POST /api/auth/login
 // Flow: validate req.body → login controller
-router.post("/login", validate(loginSchema), login);
+router.post("/login", authLimiter, validate(loginSchema), login);
 
 // POST /api/auth/refresh
 // No body validation needed — it reads from the cookie

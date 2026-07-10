@@ -46,8 +46,8 @@ const updateApplicationSchema = applicationSchema.partial();
 // Rules for POST /api/ai/score/:id
 // Validates that the user sent their resume text (or skills summary)
 const scoreSchema = z.object({
-  resumeText: z.string().min(20, "Please provide at least 20 characters of resume text or skills"),
-  jdText: z.string().optional(), // Optional fallback if job description wasn't saved in the database
+  resumeText: z.string().min(20, "Please provide at least 20 characters of resume text or skills").max(15000, "Resume text exceeds 15,000 character limit"),
+  jdText: z.string().max(15000, "Job description exceeds 15,000 character limit").optional(),
 });
 
 // Rules for POST /api/reminders

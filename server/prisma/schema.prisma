@@ -46,6 +46,7 @@ model User {
   publicProfileEnabled Boolean       @default(false)
   profileSlug          String?       @unique
   dailyTarget          Int           @default(3)
+  tokenVersion         Int           @default(0)
   createdAt            DateTime      @default(now())
 
   // Relations — these are NOT columns in the DB.

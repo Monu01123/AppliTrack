@@ -23,24 +23,22 @@ const generateAccessToken = (userId) => {
 
 // Generates a long-lived refresh token (7 days)
 // Stored in an httpOnly cookie — JavaScript on the frontend cannot read it
-const generateRefreshToken = (userId) => {
+const generateRefreshToken = (userId, tokenVersion = 0) => {
   return jwt.sign(
-    { userId },
+    { userId, tokenVersion },
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: "7d" }
   );
 };
 
-// Sends the refresh token as an httpOnly cookie
-// httpOnly: true  → browser JS cannot access it (blocks XSS attacks)
-// sameSite: lax   → cookie is sent on top-level navigations (good default)
-// secure: true    → only sent over HTTPS (we check env so it works on localhost too)
+// Sends the refresh token as an httpOnly cookie restricted to /api/auth path
 const sendRefreshTokenCookie = (res, token) => {
   res.cookie("refreshToken", token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+    path: "/api/auth",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 };
 
@@ -71,8 +69,9 @@ const register = async (req, res, next) => {
     });
 
     // Generate both tokens
+    // Generate both tokens
     const accessToken = generateAccessToken(user.id);
-    const refreshToken = generateRefreshToken(user.id);
+    const refreshToken = generateRefreshToken(user.id, user.tokenVersion || 0);
 
     // Send refresh token as cookie (httpOnly — invisible to JS)
     sendRefreshTokenCookie(res, refreshToken);
@@ -117,7 +116,7 @@ const login = async (req, res, next) => {
     }
 
     const accessToken = generateAccessToken(user.id);
-    const refreshToken = generateRefreshToken(user.id);
+    const refreshToken = generateRefreshToken(user.id, user.tokenVersion || 0);
 
     sendRefreshTokenCookie(res, refreshToken);
 
@@ -141,28 +140,27 @@ const login = async (req, res, next) => {
 
 const refresh = async (req, res, next) => {
   try {
-    // cookie-parser makes the cookie available at req.cookies
     const token = req.cookies.refreshToken;
-
     if (!token) {
       return res.status(401).json({ error: "No refresh token" });
     }
 
-    // jwt.verify throws if the token is expired or tampered with
     const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
-
-    // Optional: verify user still exists in DB (in case account was deleted)
     const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
-    if (!user) {
-      return res.status(401).json({ error: "User not found" });
+
+    // Check that user exists and token version matches current tokenVersion
+    if (!user || decoded.tokenVersion !== user.tokenVersion) {
+      res.clearCookie("refreshToken", { path: "/api/auth" });
+      return res.status(401).json({ error: "Session revoked or expired" });
     }
 
-    // Issue a fresh access token
+    // ROTATE: issue fresh access token AND rotate refresh token
     const accessToken = generateAccessToken(user.id);
+    const newRefreshToken = generateRefreshToken(user.id, user.tokenVersion);
 
+    sendRefreshTokenCookie(res, newRefreshToken);
     res.json({ accessToken });
   } catch (err) {
-    // jwt.verify throws JsonWebTokenError or TokenExpiredError
     if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
       return res.status(401).json({ error: "Invalid or expired refresh token" });
     }
@@ -172,17 +170,30 @@ const refresh = async (req, res, next) => {
 
 // ─── LOGOUT ───────────────────────────────────────────────────────────────────
 // POST /api/auth/logout
-// Clears the refresh token cookie — that's all it takes to "log out"
+// Clears the refresh token cookie and increments tokenVersion to invalidate all existing refresh tokens
 
-const logout = (req, res) => {
-  // Clear the cookie by setting it to expire immediately
-  res.clearCookie("refreshToken", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-  });
-
-  res.json({ message: "Logged out successfully" });
+const logout = async (req, res, next) => {
+  try {
+    const token = req.cookies.refreshToken;
+    if (token) {
+      const decoded = jwt.decode(token);
+      if (decoded?.userId) {
+        await prisma.user.update({
+          where: { id: decoded.userId },
+          data: { tokenVersion: { increment: 1 } },
+        });
+      }
+    }
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/api/auth",
+    });
+    res.json({ message: "Logged out successfully" });
+  } catch (err) {
+    next(err);
+  }
 };
 
 module.exports = { register, login, refresh, logout };

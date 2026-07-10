@@ -14,9 +14,22 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const scoreResume = async (req, res, next) => {
   try {
     const { id } = req.params;
-
     const { resumeText, jdText } = req.body;
 
+    // Enforce 10 AI calls/user/day limit
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const aiCallsToday = await prisma.aiScore.count({
+      where: {
+        application: { userId: req.userId },
+        createdAt: { gte: startOfDay },
+      },
+    });
+    if (aiCallsToday >= 10) {
+      return res.status(429).json({
+        error: "Daily AI scoring limit reached (10/day). Please try again tomorrow.",
+      });
+    }
 
     const application = await prisma.application.findFirst({ where: { id, userId: req.userId, deletedAt: null } });
     if (!application) {
