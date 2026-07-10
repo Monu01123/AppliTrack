@@ -28,6 +28,14 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const handleUnauthorized = () => {
+      setUser(null);
+      setAccessToken(null);
+      localStorage.removeItem("hireiq_user");
+      localStorage.removeItem("hireiq_token");
+    };
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+
     const checkAuth = async () => {
       try {
         const res = await api.post("/auth/refresh");
@@ -38,19 +46,18 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem("hireiq_user", JSON.stringify(res.data.user));
         }
       } catch (err) {
-        // If refresh fails but we already loaded user from localStorage above,
-        // we can keep localStorage user if token is still valid, otherwise clear it.
-        const savedToken = localStorage.getItem("hireiq_token");
-        if (!savedToken) {
-          setUser(null);
-          localStorage.removeItem("hireiq_user");
-          localStorage.removeItem("hireiq_token");
+        // If refresh fails with 401 Unauthorized (session expired or revoked)
+        // or if there is no savedToken, clear user state and localStorage
+        if (err.response?.status === 401 || !localStorage.getItem("hireiq_token")) {
+          handleUnauthorized();
         }
       } finally {
         setLoading(false);
       }
     };
     checkAuth();
+
+    return () => window.removeEventListener("auth:unauthorized", handleUnauthorized);
   }, []);
 
   // ─── LOGIN FUNCTION ──────────────────────────────────────────────────────────

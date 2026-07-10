@@ -30,6 +30,15 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    // Don't retry refresh endpoint itself to avoid infinite loop
+    if (originalRequest.url?.includes("/auth/refresh")) {
+      currentAccessToken = null;
+      localStorage.removeItem("hireiq_token");
+      localStorage.removeItem("hireiq_user");
+      window.dispatchEvent(new Event("auth:unauthorized"));
+      return Promise.reject(error);
+    }
+
     // If error is 401 and we haven't already retried this exact request
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -44,6 +53,9 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         currentAccessToken = null;
+        localStorage.removeItem("hireiq_token");
+        localStorage.removeItem("hireiq_user");
+        window.dispatchEvent(new Event("auth:unauthorized"));
         return Promise.reject(refreshError);
       }
     }
