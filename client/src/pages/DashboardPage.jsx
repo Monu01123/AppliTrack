@@ -15,6 +15,10 @@ import {
   Trash2,
   Building2,
   Calendar,
+  Share2,
+  ExternalLink,
+  Copy,
+  Check,
 } from "lucide-react";
 import api from "../lib/api";
 import { ApplicationModal } from "../components/ApplicationModal";
@@ -43,6 +47,67 @@ export const DashboardPage = () => {
   const [aiApp, setAiApp] = useState(null);
   const [reminderApp, setReminderApp] = useState(null);
 
+  // Public Profile Showcase State
+  const [publicProfile, setPublicProfile] = useState(null);
+  const [slugInput, setSlugInput] = useState("");
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMsg, setProfileMsg] = useState("");
+
+  const fetchPublicSettings = async () => {
+    try {
+      const res = await api.get("/auth/profile/public");
+      setPublicProfile(res.data);
+      setSlugInput(res.data.profileSlug || "");
+    } catch (err) {
+      console.error("Failed to fetch public profile settings:", err);
+    }
+  };
+
+  const handleTogglePublic = async () => {
+    if (!publicProfile) return;
+    setSavingProfile(true);
+    setProfileMsg("");
+    try {
+      const nextVal = !publicProfile.publicProfileEnabled;
+      const res = await api.patch("/auth/profile/public", {
+        publicProfileEnabled: nextVal,
+      });
+      setPublicProfile(res.data);
+      setProfileMsg(nextVal ? "Public showcase enabled!" : "Public showcase set to private.");
+    } catch (err) {
+      setProfileMsg("Failed to update public settings.");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleSaveSlug = async (e) => {
+    e.preventDefault();
+    setSavingProfile(true);
+    setProfileMsg("");
+    try {
+      const res = await api.patch("/auth/profile/public", {
+        profileSlug: slugInput || null,
+      });
+      setPublicProfile(res.data);
+      setProfileMsg("Profile slug saved!");
+    } catch (err) {
+      setProfileMsg(err.response?.data?.error || "Failed to save slug.");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleCopyPublicLink = () => {
+    if (!publicProfile) return;
+    const identifier = publicProfile.profileSlug || publicProfile.id;
+    const url = `${window.location.origin}/p/${identifier}`;
+    navigator.clipboard.writeText(url);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
   // Load applications from backend
   const fetchApplications = async () => {
     try {
@@ -59,6 +124,7 @@ export const DashboardPage = () => {
 
   useEffect(() => {
     fetchApplications();
+    fetchPublicSettings();
   }, []);
 
   // Save or Update Application
@@ -205,6 +271,79 @@ export const DashboardPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Shareable Public Showcase Control Banner */}
+      {publicProfile && (
+        <div className="glass-card p-4 border border-sky-500/30 bg-gradient-to-r from-slate-900 via-sky-950/30 to-slate-900 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <Share2 className="w-4 h-4 text-sky-400" />
+              <h3 className="font-bold text-white text-sm">Shareable Public Showcase</h3>
+              <button
+                onClick={handleTogglePublic}
+                disabled={savingProfile}
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase transition-all ${
+                  publicProfile.publicProfileEnabled
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                    : "bg-slate-800 text-slate-400 border border-slate-700 hover:text-white"
+                }`}
+              >
+                {publicProfile.publicProfileEnabled ? "● Public ON" : "○ Private OFF"}
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
+              Share verified aggregate stats and non-confidential application timeline with mentors or recruiters.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
+            <form onSubmit={handleSaveSlug} className="flex items-center gap-1.5">
+              <div className="flex items-center bg-slate-900/80 border border-slate-800 rounded-xl px-2.5 py-1 text-xs">
+                <span className="text-slate-500 text-[11px]">/p/</span>
+                <input
+                  type="text"
+                  placeholder="your-custom-slug"
+                  value={slugInput}
+                  onChange={(e) => setSlugInput(e.target.value)}
+                  className="bg-transparent border-none outline-none text-white text-xs w-28 focus:w-36 transition-all"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={savingProfile}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
+              >
+                Save Slug
+              </button>
+            </form>
+
+            {publicProfile.publicProfileEnabled && (
+              <>
+                <button
+                  onClick={handleCopyPublicLink}
+                  className="px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                >
+                  {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedLink ? "Copied!" : "Copy Link"}</span>
+                </button>
+                <a
+                  href={`/p/${publicProfile.profileSlug || publicProfile.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-lg shadow-sky-500/20"
+                >
+                  <span>View Public Page</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </>
+            )}
+
+            {profileMsg && (
+              <span className="text-[11px] text-sky-400 font-medium block md:inline">{profileMsg}</span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tag Filter Chip Bar */}
       {allTags.length > 0 && (

@@ -41,9 +41,11 @@ model User {
   name         String
   email        String        @unique               // @unique = no two users share an email
   password     String                              // will store bcrypt hash, never plaintext
-  reminderOn   Boolean       @default(true)
-  reminderDays Int           @default(7)
-  createdAt    DateTime      @default(now())
+  reminderOn           Boolean       @default(true)
+  reminderDays         Int           @default(7)
+  publicProfileEnabled Boolean       @default(false)
+  profileSlug          String?       @unique
+  createdAt            DateTime      @default(now())
 
   // Relations — these are NOT columns in the DB.
   // They tell Prisma "a User has many Applications and many Reminders"

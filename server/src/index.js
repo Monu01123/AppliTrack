@@ -127,6 +127,7 @@ app.use("/api/ai", require("./routes/ai"));
 app.use("/api/analytics", require("./routes/analytics"));
 app.use("/api/reminders", require("./routes/reminders"));
 app.use("/api/resumes", require("./routes/resumes"));
+app.use("/api/public", require("./routes/public"));
 
 // 404 handler — catches any route that didn't match above
 app.use((req, res) => {

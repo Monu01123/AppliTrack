@@ -8,6 +8,7 @@ import { AuthPage } from "./pages/AuthPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { RemindersPage } from "./pages/RemindersPage";
+import { PublicProfilePage } from "./pages/PublicProfilePage";
 
 export function App() {
   return (
@@ -18,6 +19,7 @@ export function App() {
           <main className="flex-1">
             <Routes>
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/p/:slugOrId" element={<PublicProfilePage />} />
               <Route
                 path="/"
                 element={

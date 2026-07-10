@@ -27,4 +27,13 @@ router.post("/refresh", refresh);
 // POST /api/auth/logout
 router.post("/logout", logout);
 
+const verifyToken = require("../middleware/verifyToken");
+const {
+  updatePublicProfileSettings,
+  getPublicProfileSettings,
+} = require("../controllers/public.controller");
+
+router.get("/profile/public", verifyToken, getPublicProfileSettings);
+router.patch("/profile/public", verifyToken, updatePublicProfileSettings);
+
 module.exports = router;
