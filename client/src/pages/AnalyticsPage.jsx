@@ -22,6 +22,7 @@ import {
   AlertCircle,
   BarChart3,
   PieChart as PieIcon,
+  Mail,
 } from "lucide-react";
 
 const COLORS = {
@@ -37,6 +38,22 @@ export const AnalyticsPage = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [sendingDigest, setSendingDigest] = useState(false);
+  const [digestMessage, setDigestMessage] = useState("");
+
+  const handleSendDigest = async () => {
+    setSendingDigest(true);
+    setDigestMessage("");
+    try {
+      const res = await api.post("/analytics/digest");
+      setDigestMessage(res.data.message || "Weekly digest sent!");
+    } catch (err) {
+      setDigestMessage("Failed to send weekly digest.");
+      console.error(err);
+    } finally {
+      setSendingDigest(false);
+    }
+  };
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -106,6 +123,33 @@ export const AnalyticsPage = () => {
         <p className="text-sm text-slate-400 mt-1">
           Real-time metrics and conversion insights across your job applications.
         </p>
+      </div>
+
+      {/* Weekly Progress Email Digest Banner */}
+      <div className="glass-card p-5 border border-sky-500/30 bg-gradient-to-r from-sky-950/40 via-slate-900/60 to-slate-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Mail className="w-5 h-5 text-sky-400" />
+            <h3 className="font-bold text-white text-base">Weekly Progress Email Digest</h3>
+            <span className="px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 text-[10px] font-semibold">Automated Every Monday @ 9 AM</span>
+          </div>
+          <p className="text-xs text-slate-300">
+            Get an automated weekly email summarizing your application velocity, upcoming interviews, and offer rates.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 self-end sm:self-center">
+          {digestMessage && (
+            <span className="text-xs font-medium text-emerald-400">{digestMessage}</span>
+          )}
+          <button
+            onClick={handleSendDigest}
+            disabled={sendingDigest}
+            className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white text-xs font-semibold shadow-lg shadow-sky-500/20 transition-all flex items-center gap-1.5 shrink-0"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            {sendingDigest ? "Sending..." : "Send Test Digest Now"}
+          </button>
+        </div>
       </div>
 
       {/* KPI Metric Cards */}

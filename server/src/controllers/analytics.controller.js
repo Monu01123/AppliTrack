@@ -83,6 +83,54 @@ const getAnalyticsSummary = async (req, res, next) => {
   }
 };
 
+const { sendWeeklyDigestEmail } = require("../lib/mailer");
+
+const sendWeeklyDigest = async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { email: true, name: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const [total, newThisWeek, interviews, offers] = await Promise.all([
+      prisma.application.count({ where: { userId: req.userId, deletedAt: null } }),
+      prisma.application.count({
+        where: { userId: req.userId, deletedAt: null, appliedAt: { gte: sevenDaysAgo } },
+      }),
+      prisma.application.count({
+        where: { userId: req.userId, deletedAt: null, status: "INTERVIEW" },
+      }),
+      prisma.application.count({
+        where: { userId: req.userId, deletedAt: null, status: "OFFER" },
+      }),
+    ]);
+
+    const stats = { total, newThisWeek, interviews, offers };
+
+    await sendWeeklyDigestEmail({
+      to: user.email,
+      name: user.name,
+      stats,
+    });
+
+    res.json({
+      success: true,
+      message: "Weekly progress email digest generated and sent!",
+      stats,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getAnalyticsSummary,
+  sendWeeklyDigest,
 };

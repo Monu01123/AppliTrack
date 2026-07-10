@@ -8,8 +8,9 @@ const router = express.Router();
 
 const verifyToken = require("../middleware/verifyToken.js");
 
-const { getAnalyticsSummary } = require("../controllers/analytics.controller.js");
+const { getAnalyticsSummary, sendWeeklyDigest } = require("../controllers/analytics.controller.js");
 
 router.get("/summary", verifyToken, getAnalyticsSummary);
+router.post("/digest", verifyToken, sendWeeklyDigest);
 
 module.exports = router;

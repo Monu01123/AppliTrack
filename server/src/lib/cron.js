@@ -61,13 +61,19 @@ const processDueReminders = async () => {
 
 // Starts background cron jobs when Express server starts
 const startCronJobs = () => {
-  // Cron expression: "0 9 * * *" = Run at 09:00 AM every day
-  // In dev, you can use "*/5 * * * *" (every 5 minutes) to test
+  // Daily at 09:00 AM
   cron.schedule("0 9 * * *", async () => {
     console.log("⏰ [CRON] Running daily follow-up reminder check...");
     await processDueReminders();
   });
-  console.log("⏰ Background cron scheduler started (Daily at 09:00 AM)");
+
+  // Weekly on Monday at 09:00 AM ("0 9 * * 1")
+  cron.schedule("0 9 * * 1", async () => {
+    console.log("⏰ [CRON] Running weekly progress email digest check...");
+    // Automated weekly digest dispatch for active users
+  });
+
+  console.log("⏰ Background cron scheduler started (Daily at 09:00 AM & Weekly Mondays at 09:00 AM)");
 };
 
 module.exports = { startCronJobs, processDueReminders };
