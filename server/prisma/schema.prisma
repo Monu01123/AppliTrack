@@ -45,6 +45,7 @@ model User {
   reminderDays         Int           @default(7)
   publicProfileEnabled Boolean       @default(false)
   profileSlug          String?       @unique
+  dailyTarget          Int           @default(3)
   createdAt            DateTime      @default(now())
 
   // Relations — these are NOT columns in the DB.

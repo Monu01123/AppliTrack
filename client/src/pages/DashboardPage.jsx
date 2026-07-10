@@ -19,6 +19,9 @@ import {
   ExternalLink,
   Copy,
   Check,
+  Target,
+  Flame,
+  Edit3,
 } from "lucide-react";
 import api from "../lib/api";
 import { ApplicationModal } from "../components/ApplicationModal";
@@ -108,6 +111,36 @@ export const DashboardPage = () => {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  // Daily Target & Streak State
+  const [goals, setGoals] = useState({ dailyTarget: 3, applicationsToday: 0, streakDays: 0 });
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [newTargetVal, setNewTargetVal] = useState(3);
+  const [savingGoal, setSavingGoal] = useState(false);
+
+  const fetchGoals = async () => {
+    try {
+      const res = await api.get("/analytics/goals");
+      setGoals(res.data);
+      setNewTargetVal(res.data.dailyTarget);
+    } catch (err) {
+      console.error("Failed to fetch goal stats:", err);
+    }
+  };
+
+  const handleUpdateGoal = async (e) => {
+    e.preventDefault();
+    setSavingGoal(true);
+    try {
+      const res = await api.patch("/analytics/goals", { dailyTarget: Number(newTargetVal) });
+      setGoals(res.data);
+      setEditingGoal(false);
+    } catch (err) {
+      console.error("Failed to update goal:", err);
+    } finally {
+      setSavingGoal(false);
+    }
+  };
+
   // Load applications from backend
   const fetchApplications = async () => {
     try {
@@ -125,6 +158,7 @@ export const DashboardPage = () => {
   useEffect(() => {
     fetchApplications();
     fetchPublicSettings();
+    fetchGoals();
   }, []);
 
   // Save or Update Application
@@ -140,6 +174,7 @@ export const DashboardPage = () => {
       const newApp = res.data;
       setApplications((prev) => [newApp, ...prev]);
     }
+    fetchGoals();
   };
 
   // Delete Application
@@ -148,6 +183,7 @@ export const DashboardPage = () => {
     try {
       await api.delete(`/applications/${id}`);
       setApplications((prev) => prev.filter((item) => item.id !== id));
+      fetchGoals();
     } catch (err) {
       console.error("Failed to delete application:", err);
     }
@@ -269,6 +305,82 @@ export const DashboardPage = () => {
             <Plus className="w-4 h-4" />
             <span>Add Application</span>
           </button>
+        </div>
+      </div>
+
+      {/* Daily Goal & Streak Tracker Banner */}
+      <div className="glass-card p-4 border border-emerald-500/30 bg-gradient-to-r from-slate-900 via-emerald-950/20 to-slate-900 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
+            <Target className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div className="space-y-1 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-bold text-white text-sm">
+                Daily Application Target: {goals.applicationsToday} / {goals.dailyTarget}
+              </h3>
+              {goals.applicationsToday >= goals.dailyTarget ? (
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  🎯 Target Achieved Today!
+                </span>
+              ) : (
+                <span className="text-[10px] font-semibold text-slate-400">
+                  ({Math.max(0, goals.dailyTarget - goals.applicationsToday)} more to go)
+                </span>
+              )}
+            </div>
+            {/* Progress Bar */}
+            <div className="w-full md:w-64 h-2 rounded-full bg-slate-800 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-500 to-sky-400 transition-all duration-500 rounded-full"
+                style={{
+                  width: `${Math.min(100, Math.round((goals.applicationsToday / goals.dailyTarget) * 100))}%`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+          <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-1.5 text-amber-300 text-xs font-bold">
+            <Flame className="w-4 h-4 text-amber-400 animate-pulse" />
+            <span>{goals.streakDays} Day Streak</span>
+          </div>
+
+          {editingGoal ? (
+            <form onSubmit={handleUpdateGoal} className="flex items-center gap-1.5">
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={newTargetVal}
+                onChange={(e) => setNewTargetVal(e.target.value)}
+                className="w-16 px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs"
+              />
+              <button
+                type="submit"
+                disabled={savingGoal}
+                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingGoal(false)}
+                className="px-2 py-1 text-slate-400 hover:text-white text-xs"
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <button
+              onClick={() => setEditingGoal(true)}
+              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Edit Goal</span>
+            </button>
+          )}
         </div>
       </div>
 

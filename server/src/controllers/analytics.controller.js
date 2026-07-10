@@ -69,6 +69,8 @@ const getAnalyticsSummary = async (req, res, next) => {
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count);
 
+    const goalStats = await calculateGoalStats(req.userId);
+
     res.json({
       total,
       byStatus,
@@ -76,8 +78,93 @@ const getAnalyticsSummary = async (req, res, next) => {
       interviewRate,
       offerRate,
       tagCounts,
+      goals: goalStats,
     });
 
+  } catch (err) {
+    next(err);
+  }
+};
+
+const calculateGoalStats = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { dailyTarget: true },
+  });
+  const dailyTarget = user?.dailyTarget || 3;
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const applicationsToday = await prisma.application.count({
+    where: {
+      userId,
+      deletedAt: null,
+      appliedAt: { gte: startOfToday },
+    },
+  });
+
+  const recentApps = await prisma.application.findMany({
+    where: { userId, deletedAt: null },
+    select: { appliedAt: true },
+    orderBy: { appliedAt: "desc" },
+  });
+
+  const activeDates = new Set(
+    recentApps.map((a) => {
+      const d = new Date(a.appliedAt);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    })
+  );
+
+  let streakDays = 0;
+  let checkDate = new Date(startOfToday);
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  if (!activeDates.has(todayStr)) {
+    checkDate.setDate(checkDate.getDate() - 1);
+  }
+
+  while (true) {
+    const dtStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, "0")}-${String(checkDate.getDate()).padStart(2, "0")}`;
+    if (activeDates.has(dtStr)) {
+      streakDays++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+
+  return {
+    dailyTarget,
+    applicationsToday,
+    streakDays,
+  };
+};
+
+const getGoalStats = async (req, res, next) => {
+  try {
+    const stats = await calculateGoalStats(req.userId);
+    res.json(stats);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateDailyTarget = async (req, res, next) => {
+  try {
+    const { dailyTarget } = req.body;
+    const targetVal = Number(dailyTarget);
+    if (!Number.isInteger(targetVal) || targetVal < 1 || targetVal > 50) {
+      return res.status(400).json({ error: "Daily target must be between 1 and 50 applications." });
+    }
+
+    await prisma.user.update({
+      where: { id: req.userId },
+      data: { dailyTarget: targetVal },
+    });
+
+    const updatedStats = await calculateGoalStats(req.userId);
+    res.json(updatedStats);
   } catch (err) {
     next(err);
   }
@@ -133,4 +220,6 @@ const sendWeeklyDigest = async (req, res, next) => {
 module.exports = {
   getAnalyticsSummary,
   sendWeeklyDigest,
+  getGoalStats,
+  updateDailyTarget,
 };

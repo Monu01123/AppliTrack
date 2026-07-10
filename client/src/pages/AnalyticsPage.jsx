@@ -23,6 +23,8 @@ import {
   BarChart3,
   PieChart as PieIcon,
   Mail,
+  Target,
+  Flame,
 } from "lucide-react";
 
 const COLORS = {
@@ -112,6 +114,8 @@ export const AnalyticsPage = () => {
     .filter((d) => d.statusKey === "PHONE_SCREEN" || d.statusKey === "INTERVIEW")
     .reduce((acc, curr) => acc + curr.value, 0);
 
+  const goals = data.goals || { dailyTarget: 3, applicationsToday: 0, streakDays: 0 };
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
       {/* Page Header */}
@@ -123,6 +127,37 @@ export const AnalyticsPage = () => {
         <p className="text-sm text-slate-400 mt-1">
           Real-time metrics and conversion insights across your job applications.
         </p>
+      </div>
+
+      {/* Daily Target Tracker & Streak Card */}
+      <div className="glass-card p-4 border border-emerald-500/30 bg-gradient-to-r from-slate-900 via-emerald-950/20 to-slate-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
+            <Target className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-white">
+                Daily Goal: {goals.applicationsToday} / {goals.dailyTarget} Applications Today
+              </span>
+              {goals.applicationsToday >= goals.dailyTarget && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold uppercase">
+                  🎯 Achieved
+                </span>
+              )}
+            </div>
+            <div className="w-52 h-1.5 rounded-full bg-slate-800 overflow-hidden mt-1.5">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-500 to-sky-400 rounded-full"
+                style={{ width: `${Math.min(100, Math.round((goals.applicationsToday / goals.dailyTarget) * 100))}%` }}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-1.5 text-amber-300 text-xs font-bold">
+          <Flame className="w-4 h-4 text-amber-400 animate-pulse" />
+          <span>{goals.streakDays} Day Application Streak</span>
+        </div>
       </div>
 
       {/* Weekly Progress Email Digest Banner */}
