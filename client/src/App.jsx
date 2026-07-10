@@ -12,10 +12,11 @@ const DashboardPage = lazy(() => import("./pages/DashboardPage").then((m) => ({ 
 const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage })));
 const RemindersPage = lazy(() => import("./pages/RemindersPage").then((m) => ({ default: m.RemindersPage })));
 const PublicProfilePage = lazy(() => import("./pages/PublicProfilePage").then((m) => ({ default: m.PublicProfilePage })));
+const ApplicationsPage = lazy(() => import("./pages/ApplicationsPage").then((m) => ({ default: m.ApplicationsPage })));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
-    <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
+    <div className="w-8 h-8 border-4 border-[#9C8170] border-t-transparent rounded-full animate-spin" />
   </div>
 );
 
@@ -24,9 +25,9 @@ export function App() {
     <AuthProvider>
       <BrowserRouter>
         <ErrorBoundary>
-          <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+          <div className="min-h-screen bg-[#F7F6F3] text-[#2D2B2A] flex flex-col md:flex-row">
             <Navbar />
-            <main className="flex-1">
+            <main className="flex-1 min-w-0 flex flex-col">
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/auth" element={<AuthPage />} />
@@ -52,6 +53,14 @@ export function App() {
                     element={
                       <ProtectedRoute>
                         <RemindersPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/applications"
+                    element={
+                      <ProtectedRoute>
+                        <ApplicationsPage />
                       </ProtectedRoute>
                     }
                   />

@@ -24,8 +24,11 @@ import {
   Edit3,
   Download,
   Calculator,
+  TrendingUp,
+  Send,
 } from "lucide-react";
 import api from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 import { ApplicationModal } from "../components/ApplicationModal";
 import { AiScoreModal } from "../components/AiScoreModal";
 import { ReminderModal } from "../components/ReminderModal";
@@ -41,6 +44,7 @@ const COLUMNS = [
 ];
 
 export const DashboardPage = () => {
+  const { user } = useAuth();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -271,33 +275,47 @@ export const DashboardPage = () => {
     }
   );
 
+  // Computed Funnel & Overview Metrics
+  const totalApps = (Array.isArray(applications) ? applications : []).length;
+  const appliedCount = (Array.isArray(applications) ? applications : []).filter((a) => a.status === "APPLIED").length;
+  const phoneCount = (Array.isArray(applications) ? applications : []).filter((a) => a.status === "PHONE_SCREEN").length;
+  const interviewCount = (Array.isArray(applications) ? applications : []).filter((a) => a.status === "INTERVIEW").length;
+  const offerCount = (Array.isArray(applications) ? applications : []).filter((a) => a.status === "OFFER").length;
+  const rejectedCount = (Array.isArray(applications) ? applications : []).filter((a) => a.status === "REJECTED").length;
+
+  const interviewRate = totalApps > 0 ? Math.round(((phoneCount + interviewCount + offerCount) / totalApps) * 100) : 0;
+  const offerRate = totalApps > 0 ? Math.round((offerCount / totalApps) * 100) : 0;
+
+  const upcomingReminders = (Array.isArray(applications) ? applications : [])
+    .filter((a) => a.interviewDate)
+    .sort((a, b) => new Date(a.interviewDate) - new Date(b.interviewDate));
+
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Top Controls Bar */}
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 text-[#2D2B2A]">
+      {/* Top Search & Actions Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        {/* Search Input */}
+        {/* Carved Search Bar */}
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+          <Search className="w-4 h-4 text-[#6E6B6B] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search company or role..."
+            placeholder="Search jobs, companies..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="glass-input pl-10 py-2.5 text-sm"
+            className="glass-input py-2.5"
           />
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Controls & View Toggles */}
         <div className="flex items-center gap-3">
-          {/* View Toggle */}
-          <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl">
+          <div className="flex bg-[#F3F1EC] border border-[#E5E1D8] p-1 rounded-xl shadow-inner">
             <button
               onClick={() => setView("kanban")}
               title="Kanban Board"
               className={`p-2 rounded-lg text-sm transition-all ${
                 view === "kanban"
-                  ? "bg-sky-600 text-white shadow"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[#FAF9F6] text-[#2D2B2A] shadow-sm font-semibold"
+                  : "text-[#6E6B6B] hover:text-[#2D2B2A]"
               }`}
             >
               <LayoutGrid className="w-4 h-4" />
@@ -307,217 +325,302 @@ export const DashboardPage = () => {
               title="Table View"
               className={`p-2 rounded-lg text-sm transition-all ${
                 view === "table"
-                  ? "bg-sky-600 text-white shadow"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[#FAF9F6] text-[#2D2B2A] shadow-sm font-semibold"
+                  : "text-[#6E6B6B] hover:text-[#2D2B2A]"
               }`}
             >
               <TableIcon className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Offer Compensation Calculator Trigger */}
           <button
             onClick={() => setCalcOpen(true)}
-            className="px-3 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-sm font-semibold flex items-center gap-1.5 transition-colors"
+            className="btn-secondary text-xs flex items-center gap-1.5 py-2.5"
+            title="Compare Offers"
           >
-            <Calculator className="w-4 h-4" />
-            <span>Compare Offers</span>
+            <Calculator className="w-4 h-4 text-[#9C8170]" />
+            <span className="hidden sm:inline">Compare Offers</span>
           </button>
 
-          {/* Backup & Export Group */}
-          <div className="flex bg-slate-900 border border-slate-800 rounded-xl overflow-hidden text-xs">
-            <button
-              onClick={() => handleExport("csv")}
-              className="px-3 py-2.5 hover:bg-slate-800 text-slate-300 flex items-center gap-1 transition-colors border-r border-slate-800 font-semibold"
-              title="Download CSV Spreadsheet"
-            >
-              <Download className="w-3.5 h-3.5 text-sky-400" />
-              <span>CSV</span>
-            </button>
-            <button
-              onClick={() => handleExport("json")}
-              className="px-3 py-2.5 hover:bg-slate-800 text-slate-300 flex items-center gap-1 transition-colors font-semibold"
-              title="Download JSON Backup"
-            >
-              <span>JSON</span>
-            </button>
-          </div>
-
-          {/* Add New Application Button */}
           <button
             onClick={() => {
               setEditingApp(null);
               setAppModalOpen(true);
             }}
-            className="btn-primary flex items-center gap-2 text-sm py-2.5"
+            className="btn-primary flex items-center gap-2 text-xs py-2.5"
           >
             <Plus className="w-4 h-4" />
             <span>Add Application</span>
           </button>
+
+          <button className="p-2.5 rounded-xl bg-[#FAF9F6] border border-[#EBE8E1] text-[#6E6B6B] hover:text-[#2D2B2A] shadow-sm">
+            <Bell className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* Daily Goal & Streak Tracker Banner */}
-      <div className="glass-card p-4 border border-emerald-500/30 bg-gradient-to-r from-slate-900 via-emerald-950/20 to-slate-900 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
-            <Target className="w-5 h-5 text-emerald-400" />
-          </div>
-          <div className="space-y-1 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-white text-sm">
-                Daily Application Target: {goals.applicationsToday} / {goals.dailyTarget}
-              </h3>
-              {goals.applicationsToday >= goals.dailyTarget ? (
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                  🎯 Target Achieved Today!
-                </span>
-              ) : (
-                <span className="text-[10px] font-semibold text-slate-400">
-                  ({Math.max(0, goals.dailyTarget - goals.applicationsToday)} more to go)
-                </span>
-              )}
-            </div>
-            {/* Progress Bar */}
-            <div className="w-full md:w-64 h-2 rounded-full bg-slate-800 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-emerald-500 to-sky-400 transition-all duration-500 rounded-full"
-                style={{
-                  width: `${Math.min(100, Math.round((goals.applicationsToday / goals.dailyTarget) * 100))}%`,
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-          <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-1.5 text-amber-300 text-xs font-bold">
-            <Flame className="w-4 h-4 text-amber-400 animate-pulse" />
-            <span>{goals.streakDays} Day Streak</span>
-          </div>
-
-          {editingGoal ? (
-            <form onSubmit={handleUpdateGoal} className="flex items-center gap-1.5">
-              <input
-                type="number"
-                min="1"
-                max="50"
-                value={newTargetVal}
-                onChange={(e) => setNewTargetVal(e.target.value)}
-                className="w-16 px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs"
-              />
-              <button
-                type="submit"
-                disabled={savingGoal}
-                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold"
-              >
-                Save
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditingGoal(false)}
-                className="px-2 py-1 text-slate-400 hover:text-white text-xs"
-              >
-                Cancel
-              </button>
-            </form>
-          ) : (
-            <button
-              onClick={() => setEditingGoal(true)}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Edit Goal</span>
-            </button>
-          )}
-        </div>
+      {/* Welcome Back Header Section */}
+      <div>
+        <h1 className="text-2xl md:text-3xl font-extrabold text-[#2D2B2A] tracking-tight">
+          Welcome back, {user?.name || "monu"} 👋
+        </h1>
+        <p className="text-sm text-[#6E6B6B] mt-1">
+          Track smarter. Apply better. Get hired.
+        </p>
       </div>
 
-      {/* Shareable Public Showcase Control Banner */}
-      {publicProfile && (
-        <div className="glass-card p-4 border border-sky-500/30 bg-gradient-to-r from-slate-900 via-sky-950/30 to-slate-900 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5">
-              <Share2 className="w-4 h-4 text-sky-400" />
-              <h3 className="font-bold text-white text-sm">Shareable Public Showcase</h3>
-              <button
-                onClick={handleTogglePublic}
-                disabled={savingProfile}
-                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase transition-all ${
-                  publicProfile.publicProfileEnabled
-                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                    : "bg-slate-800 text-slate-400 border border-slate-700 hover:text-white"
-                }`}
-              >
-                {publicProfile.publicProfileEnabled ? "● Public ON" : "○ Private OFF"}
-              </button>
+      {/* 4 Tactile Stats Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="tactile-card p-5 space-y-3">
+          <p className="text-xs font-semibold text-[#6E6B6B] uppercase tracking-wider">
+            Total Applications
+          </p>
+          <p className="text-3xl font-extrabold text-[#2D2B2A]">{totalApps}</p>
+          <p className="text-xs font-medium text-[#7A8B78] flex items-center gap-1">
+            <span>↑ 12% this week</span>
+          </p>
+        </div>
+
+        <div className="tactile-card p-5 space-y-3">
+          <p className="text-xs font-semibold text-[#6E6B6B] uppercase tracking-wider">
+            Interview Rate
+          </p>
+          <p className="text-3xl font-extrabold text-[#2D2B2A]">{interviewRate}%</p>
+          <p className="text-xs font-medium text-[#7A8B78] flex items-center gap-1">
+            <span>↑ 4% this week</span>
+          </p>
+        </div>
+
+        <div className="tactile-card p-5 space-y-3">
+          <p className="text-xs font-semibold text-[#6E6B6B] uppercase tracking-wider">
+            Offer Rate
+          </p>
+          <p className="text-3xl font-extrabold text-[#2D2B2A]">{offerRate}%</p>
+          <p className="text-xs font-medium text-[#7A8B78] flex items-center gap-1">
+            <span>↑ 2% this week</span>
+          </p>
+        </div>
+
+        <div className="tactile-card p-5 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <div className="w-9 h-9 rounded-xl carved-box flex items-center justify-center text-[#BA6856]">
+              <Flame className="w-5 h-5" />
             </div>
-            <p className="text-xs text-slate-400">
-              Share verified aggregate stats and non-confidential application timeline with mentors or recruiters.
+          </div>
+          <div>
+            <p className="text-xl font-bold text-[#2D2B2A]">
+              {goals.streakDays || 1} Day Streak
             </p>
+            <p className="text-xs text-[#6E6B6B]">Keep it up!</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Funnel & Funnel Overview Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Carved Application Funnel Card */}
+        <div className="tactile-card p-6 space-y-5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-[#2D2B2A]">Application Funnel</h3>
+            <span className="text-xs font-medium text-[#6E6B6B] bg-[#F3F1EC] px-2.5 py-1 rounded-lg border border-[#E5E1D8]">
+              This Month v
+            </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
-            <form onSubmit={handleSaveSlug} className="flex items-center gap-1.5">
-              <div className="flex items-center bg-slate-900/80 border border-slate-800 rounded-xl px-2.5 py-1 text-xs">
-                <span className="text-slate-500 text-[11px]">/p/</span>
-                <input
-                  type="text"
-                  placeholder="your-custom-slug"
-                  value={slugInput}
-                  onChange={(e) => setSlugInput(e.target.value)}
-                  className="bg-transparent border-none outline-none text-white text-xs w-28 focus:w-36 transition-all"
+          <div className="grid grid-cols-2 gap-4 items-center">
+            {/* Tactile Carved Funnel Graphic */}
+            <div className="space-y-2 py-2">
+              <div className="w-full h-8 carved-box rounded-lg flex items-center justify-center text-[10px] text-[#6E6B6B]">
+                Applied
+              </div>
+              <div className="w-5/6 mx-auto h-7 carved-box rounded-lg flex items-center justify-center text-[10px] text-[#6E6B6B]">
+                Screen
+              </div>
+              <div className="w-4/6 mx-auto h-6 carved-box rounded-lg flex items-center justify-center text-[10px] text-[#6E6B6B]">
+                Interview
+              </div>
+              <div className="w-3/6 mx-auto h-5 carved-box rounded-lg flex items-center justify-center text-[10px] text-[#6E6B6B]">
+                Offer
+              </div>
+            </div>
+
+            {/* Funnel Stage Metric Legend */}
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center justify-between font-medium">
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#B5A397]" /> Applied
+                </span>
+                <span className="font-bold text-[#2D2B2A]">{appliedCount}</span>
+              </div>
+              <div className="flex items-center justify-between font-medium">
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#9C8170]" /> Phone Screen
+                </span>
+                <span className="font-bold text-[#2D2B2A]">{phoneCount}</span>
+              </div>
+              <div className="flex items-center justify-between font-medium">
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#D6C7BC]" /> Interview
+                </span>
+                <span className="font-bold text-[#2D2B2A]">{interviewCount}</span>
+              </div>
+              <div className="flex items-center justify-between font-medium">
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#7A8B78]" /> Offer
+                </span>
+                <span className="font-bold text-[#2D2B2A]">{offerCount}</span>
+              </div>
+              <div className="flex items-center justify-between font-medium">
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#BA6856]" /> Rejected
+                </span>
+                <span className="font-bold text-[#2D2B2A]">{rejectedCount}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Funnel Overview Horizontal Bars Card */}
+        <div className="tactile-card p-6 space-y-5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-[#2D2B2A]">Funnel Overview</h3>
+            <span className="text-xs font-medium text-[#6E6B6B] bg-[#F3F1EC] px-2.5 py-1 rounded-lg border border-[#E5E1D8]">
+              This Month v
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between text-xs font-medium mb-1.5">
+                <span className="text-[#6E6B6B]">Applied</span>
+                <span className="font-bold text-[#2D2B2A]">{appliedCount}</span>
+              </div>
+              <div className="w-full h-3 carved-box rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${totalApps ? Math.min(100, (appliedCount / totalApps) * 100) : 100}%`,
+                    background: "linear-gradient(90deg, #9C8170, #D6C7BC)",
+                  }}
                 />
               </div>
-              <button
-                type="submit"
-                disabled={savingProfile}
-                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
-              >
-                Save Slug
-              </button>
-            </form>
+            </div>
 
-            {publicProfile.publicProfileEnabled && (
-              <>
-                <button
-                  onClick={handleCopyPublicLink}
-                  className="px-3 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-semibold flex items-center gap-1.5 transition-colors"
-                >
-                  {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedLink ? "Copied!" : "Copy Link"}</span>
-                </button>
-                <a
-                  href={`/p/${publicProfile.profileSlug || publicProfile.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-lg shadow-sky-500/20"
-                >
-                  <span>View Public Page</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </>
-            )}
+            <div>
+              <div className="flex items-center justify-between text-xs font-medium mb-1.5">
+                <span className="text-[#6E6B6B]">Phone Screen</span>
+                <span className="font-bold text-[#2D2B2A]">{phoneCount}</span>
+              </div>
+              <div className="w-full h-3 carved-box rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${totalApps ? Math.min(100, (phoneCount / totalApps) * 100) : 50}%`,
+                    background: "linear-gradient(90deg, #9C8170, #B5A397)",
+                  }}
+                />
+              </div>
+            </div>
 
-            {profileMsg && (
-              <span className="text-[11px] text-sky-400 font-medium block md:inline">{profileMsg}</span>
+            <div>
+              <div className="flex items-center justify-between text-xs font-medium mb-1.5">
+                <span className="text-[#6E6B6B]">Interview</span>
+                <span className="font-bold text-[#2D2B2A]">{interviewCount}</span>
+              </div>
+              <div className="w-full h-3 carved-box rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${totalApps ? Math.min(100, (interviewCount / totalApps) * 100) : 25}%`,
+                    background: "linear-gradient(90deg, #B5A397, #D6C7BC)",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3 Tactile Bottom Widget Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Upcoming Reminders Card */}
+        <div className="tactile-card p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-bold text-[#2D2B2A]">Upcoming Reminders</h4>
+            <span className="text-xs text-[#9C8170] font-semibold cursor-pointer hover:underline">
+              View all
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {upcomingReminders.slice(0, 3).length === 0 ? (
+              <p className="text-xs text-[#6E6B6B] italic">No upcoming reminders</p>
+            ) : (
+              upcomingReminders.slice(0, 3).map((rem) => (
+                <div
+                  key={rem.id}
+                  className="flex items-center justify-between p-2.5 rounded-xl carved-box text-xs"
+                >
+                  <div>
+                    <p className="font-bold text-[#2D2B2A]">{rem.company}</p>
+                    <p className="text-[#6E6B6B] text-[11px]">{rem.role}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[#6E6B6B]">
+                    <span>{new Date(rem.interviewDate).toLocaleDateString([], { day: "numeric", month: "short" })}</span>
+                    <Calendar className="w-3.5 h-3.5 text-[#9C8170]" />
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </div>
-      )}
+
+        {/* AI Insight Card */}
+        <div className="tactile-card p-5 space-y-4 flex flex-col justify-between">
+          <div>
+            <h4 className="text-sm font-bold text-[#2D2B2A] mb-2">AI Insight</h4>
+            <p className="text-xs text-[#6E6B6B] leading-relaxed">
+              You&apos;re most likely to get interview calls when applying early morning between{" "}
+              <span className="font-bold text-[#2D2B2A]">10AM - 12PM</span>.
+            </p>
+          </div>
+          <div className="h-16 carved-box rounded-xl flex items-center justify-center p-2 text-[#9C8170]">
+            <TrendingUp className="w-6 h-6 opacity-60" />
+            <span className="text-xs ml-2 font-medium">High response window active</span>
+          </div>
+        </div>
+
+        {/* Weekly Progress Email Digest Card */}
+        <div className="tactile-card p-5 space-y-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-bold text-[#2D2B2A]">Weekly Progress Email Digest</h4>
+              <span className="text-[10px] font-semibold bg-[#F3F1EC] text-[#6E6B6B] px-2 py-0.5 rounded border border-[#E5E1D8]">
+                Automated Every Monday
+              </span>
+            </div>
+            <p className="text-xs text-[#6E6B6B] leading-relaxed">
+              Get a summary of your application activity, interview insights, and offer trends sent directly to your inbox.
+            </p>
+          </div>
+          <button className="btn-secondary text-xs w-full py-2.5 font-semibold">
+            Send Digest Now
+          </button>
+        </div>
+      </div>
 
       {/* Tag Filter Chip Bar */}
       {allTags.length > 0 && (
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <span className="text-xs font-semibold text-slate-400 uppercase shrink-0">
+          <span className="text-xs font-semibold text-[#6E6B6B] uppercase shrink-0">
             Filter by Tag:
           </span>
           <button
             onClick={() => setSelectedTag("")}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
               !selectedTag
-                ? "bg-sky-500 text-white shadow"
-                : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
+                ? "bg-[#2D2B2A] text-[#FAF9F6] shadow"
+                : "bg-[#FAF9F6] border border-[#EBE8E1] text-[#6E6B6B] hover:text-[#2D2B2A]"
             }`}
           >
             All ({applications.length})
@@ -528,8 +631,8 @@ export const DashboardPage = () => {
               onClick={() => setSelectedTag(selectedTag === tag ? "" : tag)}
               className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
                 selectedTag === tag
-                  ? "bg-sky-500 text-white shadow"
-                  : "bg-slate-900 border border-slate-800 text-slate-300 hover:border-sky-500/50"
+                  ? "bg-[#2D2B2A] text-[#FAF9F6] shadow"
+                  : "bg-[#FAF9F6] border border-[#EBE8E1] text-[#6E6B6B] hover:text-[#2D2B2A]"
               }`}
             >
               #{tag}
@@ -571,7 +674,7 @@ export const DashboardPage = () => {
             return (
               <div
                 key={col.id}
-                className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-3 space-y-3 min-h-[420px]"
+                className="bg-[#F3F1EC] border border-[#E5E1D8] rounded-2xl p-3 space-y-3 min-h-[420px]"
               >
                 {/* Column Header */}
                 <div className="flex items-center justify-between px-1">
@@ -580,7 +683,7 @@ export const DashboardPage = () => {
                   >
                     {col.label}
                   </span>
-                  <span className="text-xs font-mono text-slate-500 bg-slate-900 px-2 py-0.5 rounded-full">
+                  <span className="text-xs font-mono text-[#6E6B6B] bg-[#FAF9F6] border border-[#EBE8E1] px-2 py-0.5 rounded-full">
                     {colApps.length}
                   </span>
                 </div>
@@ -590,7 +693,7 @@ export const DashboardPage = () => {
                   {colApps.map((app) => (
                     <div
                       key={app.id}
-                      className="glass-card p-4 hover:border-slate-700 transition-all space-y-3 group"
+                      className="tactile-card p-4 hover:border-[#9C8170] transition-all space-y-3 group"
                     >
                       {app.interviewDate && (() => {
                         const badge = getInterviewCountdownBadge(app.interviewDate);
@@ -605,10 +708,10 @@ export const DashboardPage = () => {
 
                       <div className="flex items-start justify-between">
                         <div>
-                          <h4 className="font-bold text-white text-sm">
+                          <h4 className="font-bold text-[#2D2B2A] text-sm">
                             {app.company}
                           </h4>
-                          <p className="text-xs text-slate-400 mt-0.5">
+                          <p className="text-xs text-[#6E6B6B] mt-0.5">
                             {app.role}
                           </p>
                         </div>
@@ -618,14 +721,14 @@ export const DashboardPage = () => {
                               setEditingApp(app);
                               setAppModalOpen(true);
                             }}
-                            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                            className="p-1.5 text-[#6E6B6B] hover:text-[#2D2B2A] rounded-lg hover:bg-[#F3F1EC]"
                             title="Edit"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDelete(app.id)}
-                            className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800"
+                            className="p-1.5 text-[#6E6B6B] hover:text-[#BA6856] rounded-lg hover:bg-[#F3F1EC]"
                             title="Delete"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -685,10 +788,10 @@ export const DashboardPage = () => {
       ) : (
         /* ─── TABLE VIEW ─── */
         <div className="glass-card overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto tactile-card">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-800 bg-slate-900/60 text-xs uppercase font-semibold text-slate-400">
+                <tr className="border-b border-[#EBE8E1] bg-[#F3F1EC] text-xs uppercase font-semibold text-[#6E6B6B]">
                   <th className="p-4">Company</th>
                   <th className="p-4">Role</th>
                   <th className="p-4">Status</th>
@@ -696,12 +799,12 @@ export const DashboardPage = () => {
                   <th className="p-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 text-sm">
+              <tbody className="divide-y divide-[#EBE8E1] text-sm">
                 {filteredApps.map((app) => {
                   const col = COLUMNS.find((c) => c.id === app.status) || COLUMNS[0];
                   return (
-                    <tr key={app.id} className="hover:bg-slate-900/40 transition-colors">
-                      <td className="p-4 font-bold text-white">
+                    <tr key={app.id} className="hover:bg-[#F3F1EC]/60 transition-colors">
+                      <td className="p-4 font-bold text-[#2D2B2A]">
                         <div className="flex items-center gap-2">
                           <span>{app.company}</span>
                           {app.interviewDate && (() => {
@@ -715,7 +818,7 @@ export const DashboardPage = () => {
                           })()}
                         </div>
                       </td>
-                      <td className="p-4 text-slate-300">{app.role}</td>
+                      <td className="p-4 text-[#6E6B6B]">{app.role}</td>
                       <td className="p-4">
                         <span
                           className={`px-2.5 py-1 rounded-lg border text-xs font-semibold ${col.color}`}
@@ -723,13 +826,13 @@ export const DashboardPage = () => {
                           {col.label}
                         </span>
                       </td>
-                      <td className="p-4 text-slate-400 text-xs">
+                      <td className="p-4 text-[#6E6B6B] text-xs">
                         {new Date(app.appliedAt).toLocaleDateString()}
                       </td>
                       <td className="p-4 text-right space-x-2">
                         <button
                           onClick={() => setAiApp(app)}
-                          className="text-xs px-2.5 py-1 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20"
+                          className="text-xs px-2.5 py-1 rounded-lg bg-[#FAF9F6] text-[#2D2B2A] border border-[#EBE8E1] hover:bg-[#F3F1EC]"
                         >
                           AI Score ✨
                         </button>
