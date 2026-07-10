@@ -156,16 +156,7 @@ const updateApplication = async (req, res, next) => {
   }
 };
 
-// ─── SOFT DELETE APPLICATION ──────────────────────────────────────────────────
-// DELETE /api/applications/:id
-//
-// 🎯 Soft delete pattern: instead of removing the row from the database,
-// we set "deletedAt" to the current timestamp. The row stays in the DB.
-// Benefits:
-//   - Users can "undo" a delete
-//   - You keep analytics/history data
-//   - Avoids accidental data loss
-// All queries filter { deletedAt: null } to exclude soft-deleted records.
+// Soft delete application by setting deletedAt timestamp
 
 const deleteApplication = async (req, res, next) => {
   try {

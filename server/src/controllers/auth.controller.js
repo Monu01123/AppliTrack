@@ -57,10 +57,6 @@ const register = async (req, res, next) => {
       // 409 Conflict — the resource (email) already exists
     }
 
-    // Hash the password
-    // bcrypt.hash(plaintext, saltRounds) — saltRounds=10 is the industry standard
-    // More rounds = slower hash = harder for attackers to brute-force
-    // 🎯 bcrypt is one-way: you can VERIFY but never REVERSE a hash
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create the user in the database

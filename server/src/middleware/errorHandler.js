@@ -1,17 +1,5 @@
 /**
- * src/middleware/errorHandler.js
- *
- * Global error handler — the last middleware in the Express chain.
- * Any route that does: next(new Error("something")) ends up here.
- *
- * Why a centralized handler?
- * Instead of try/catch + res.status(500).json(...) in every route,
- * we throw/forward errors to one place. This keeps route code clean
- * and ensures consistent error shape across the entire API.
- *
- * 🎯 Interview note: Express identifies error-handling middleware by its
- * 4-argument signature: (err, req, res, next). If you only have 3 args,
- * Express treats it as a regular middleware, not an error handler.
+ * Centralized global error handler middleware.
  */
 
 const errorHandler = (err, req, res, next) => {

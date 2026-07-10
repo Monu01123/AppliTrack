@@ -1,16 +1,4 @@
-// src/lib/prisma.js — Prisma Client Singleton
-//
-// Why a singleton?
-// PrismaClient opens a connection pool to the database when created.
-// If you do "new PrismaClient()" in every file, you'd open a new pool
-// each time — on Neon's free tier that means hitting the 10-connection limit fast.
-//
-// The fix: create ONE instance here and export it.
-// Every other file imports this same instance.
-//
-// 🎯 The "global" trick below is for hot-reload in development:
-// When nodemon restarts, Node.js re-runs all files — but "global" persists
-// across restarts. Without this, each nodemon restart would leak a connection.
+// Singleton Prisma Client instance to prevent connection pool exhaustion during dev hot-reloads.
 
 const dns = require("dns");
 dns.setDefaultResultOrder("ipv4first");
