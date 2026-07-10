@@ -73,12 +73,30 @@ model Application {
   updatedAt  DateTime    @updatedAt             // @updatedAt = auto-updated on every save
 
   // Relations
-  user       User        @relation(fields: [userId], references: [id])
+  user       User               @relation(fields: [userId], references: [id])
   reminders  Reminder[]
   aiScores   AiScore[]
+  stages     ApplicationStage[]
 
   @@index([userId, deletedAt])
   @@index([appliedAt])
+}
+
+model ApplicationStage {
+  id            String      @id @default(cuid())
+  applicationId String
+  stageName     String      // e.g. "Recruiter Screen", "Technical Round", "System Design", "HM Round"
+  interviewDate DateTime?   // Scheduled date/time of this specific round
+  interviewer   String?     // Name or title of interviewer
+  notes         String?     // Round-specific feedback / prep notes
+  passed        Boolean?    // null = pending/in-progress, true = passed, false = failed
+  roundOrder    Int         @default(1)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, roundOrder])
 }
 
 model AiScore {

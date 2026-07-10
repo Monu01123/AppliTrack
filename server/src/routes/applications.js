@@ -20,4 +20,6 @@ router.patch("/:id", verifyToken, validate(updateApplicationSchema), updateAppli
 router.put("/:id", verifyToken, validate(updateApplicationSchema), updateApplication);
 router.delete("/:id", verifyToken, deleteApplication);
 
+router.use("/:applicationId/stages", require("./stages"));
+
 module.exports = router;

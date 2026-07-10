@@ -45,6 +45,11 @@ const getApplications = async (req, res, next) => {
         orderBy: { [safeSort]: safeOrder },
         skip: (safePage - 1) * safeLimit,
         take: safeLimit,
+        include: {
+          stages: {
+            orderBy: { roundOrder: "asc" },
+          },
+        },
       }),
       prisma.application.count({ where }),
     ]);
@@ -102,7 +107,10 @@ const getApplication = async (req, res, next) => {
       where: { id, userId: req.userId, deletedAt: null },
       include: {
         aiScores: {
-          orderBy: { createdAt: "desc" }, // most recent score first
+          orderBy: { createdAt: "desc" },
+        },
+        stages: {
+          orderBy: { roundOrder: "asc" },
         },
       },
     });

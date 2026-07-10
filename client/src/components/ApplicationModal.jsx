@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from "react";
 import { X, Briefcase, Building2, FileText } from "lucide-react";
+import { InterviewStagesTimeline } from "./InterviewStagesTimeline";
 
 const STATUS_OPTIONS = [
   { value: "APPLIED", label: "Applied" },
@@ -288,6 +289,13 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
               className="glass-input text-sm"
             />
           </div>
+
+          {initialData?.id && (
+            <InterviewStagesTimeline
+              applicationId={initialData.id}
+              initialStages={initialData.stages || []}
+            />
+          )}
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <button

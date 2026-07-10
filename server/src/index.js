@@ -62,6 +62,7 @@ app.use("/api/ai", require("./routes/ai"));
 app.use("/api/analytics", require("./routes/analytics"));
 app.use("/api/reminders", require("./routes/reminders"));
 app.use("/api/resumes", require("./routes/resumes"));
+app.use("/api/stages", require("./routes/stagesItem"));
 app.use("/api/public", require("./routes/public"));
 
 app.use((req, res) => {
