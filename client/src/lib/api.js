@@ -36,6 +36,9 @@ api.interceptors.response.use(
       localStorage.removeItem("hireiq_token");
       localStorage.removeItem("hireiq_user");
       window.dispatchEvent(new Event("auth:unauthorized"));
+      if (typeof window !== "undefined" && window.location.pathname !== "/auth" && !window.location.pathname.startsWith("/p/")) {
+        window.location.href = "/auth";
+      }
       return Promise.reject(error);
     }
 
@@ -56,6 +59,9 @@ api.interceptors.response.use(
         localStorage.removeItem("hireiq_token");
         localStorage.removeItem("hireiq_user");
         window.dispatchEvent(new Event("auth:unauthorized"));
+        if (typeof window !== "undefined" && window.location.pathname !== "/auth" && !window.location.pathname.startsWith("/p/")) {
+          window.location.href = "/auth";
+        }
         return Promise.reject(refreshError);
       }
     }
