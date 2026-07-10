@@ -32,6 +32,14 @@ const processDueReminders = async () => {
     let sentCount = 0;
     for (const reminder of dueReminders) {
       try {
+        // 1. ATOMIC CLAIM: Mark as sent FIRST so another process or retry won't double-send
+        const claimed = await prisma.reminder.updateMany({
+          where: { id: reminder.id, sent: false },
+          data: { sent: true },
+        });
+        if (claimed.count === 0) continue; // Already claimed by another worker
+
+        // 2. Send email
         await sendReminderEmail({
           to: reminder.user.email,
           company: reminder.application.company,
@@ -39,14 +47,13 @@ const processDueReminders = async () => {
           appliedAt: reminder.application.appliedAt,
         });
 
-        // Mark reminder as sent in database
-        await prisma.reminder.update({
-          where: { id: reminder.id },
-          data: { sent: true },
-        });
-
         sentCount++;
       } catch (emailErr) {
+        // Rollback claim if email delivery actually failed
+        await prisma.reminder.update({
+          where: { id: reminder.id },
+          data: { sent: false },
+        });
         console.error(`❌ [CRON] Failed to send reminder ${reminder.id}:`, emailErr.message);
       }
     }

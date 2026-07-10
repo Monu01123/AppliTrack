@@ -20,6 +20,15 @@ const errorHandler = (err, req, res, next) => {
     console.error("[ErrorHandler]", err);
   }
 
+  // Map Prisma known query error codes to HTTP status codes
+  if (err.code === "P2002") {
+    const target = err.meta?.target || "Field";
+    return res.status(409).json({ error: `Duplicate entry: ${target} already exists.` });
+  }
+  if (err.code === "P2025") {
+    return res.status(404).json({ error: "Requested resource not found." });
+  }
+
   // If a statusCode was attached to the error object, use it — otherwise 500
   const statusCode = err.statusCode || err.status || 500;
 

@@ -88,7 +88,18 @@ const scoreResume = async (req, res, next) => {
     });
 
 
-    const aiResult = JSON.parse(response.text);
+    let rawText = response.text || "";
+    // Strip markdown code fences if Gemini returned ```json ... ```
+    rawText = rawText.replace(/^```json\s*/i, "").replace(/\s*```$/, "").trim();
+
+    let aiResult;
+    try {
+      aiResult = JSON.parse(rawText);
+    } catch (parseErr) {
+      return res.status(502).json({
+        error: "AI service returned an invalid response format. Please try again.",
+      });
+    }
 
 
     const savedScore = await prisma.aiScore.create({

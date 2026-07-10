@@ -33,23 +33,28 @@ const getApplications = async (req, res, next) => {
 
     // Run BOTH queries in parallel using Promise.all for better performance
     // Instead of: await query1, then await query2 (sequential — slower)
-    // We do:      await both at the same time (parallel — faster)
+    const ALLOWED_SORT_COLUMNS = ["appliedAt", "company", "role", "status", "updatedAt"];
+    const safeSort = ALLOWED_SORT_COLUMNS.includes(sort) ? sort : "appliedAt";
+    const safeOrder = order?.toString().toLowerCase() === "asc" ? "asc" : "desc";
+    const safeLimit = Math.min(Math.max(1, Number(limit) || 10), 100); // Max 100 per page
+    const safePage = Math.max(1, Number(page) || 1);
+
     const [applications, total] = await Promise.all([
       prisma.application.findMany({
         where,
-        orderBy: { [sort]: order },     // dynamic key: { appliedAt: "desc" }
-        skip: (Number(page) - 1) * Number(limit), // skip records for pagination
-        take: Number(limit),            // how many to return
+        orderBy: { [safeSort]: safeOrder },
+        skip: (safePage - 1) * safeLimit,
+        take: safeLimit,
       }),
-      prisma.application.count({ where }), // total matching records (for frontend pagination)
+      prisma.application.count({ where }),
     ]);
 
     res.json({
       data: applications,
-      total,                            // total number of matching records
-      page: Number(page),
-      limit: Number(limit),
-      totalPages: Math.ceil(total / Number(limit)), // how many pages exist
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
     });
   } catch (err) {
     next(err);

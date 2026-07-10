@@ -76,6 +76,9 @@ model Application {
   user       User        @relation(fields: [userId], references: [id])
   reminders  Reminder[]
   aiScores   AiScore[]
+
+  @@index([userId, deletedAt])
+  @@index([appliedAt])
 }
 
 model AiScore {
@@ -88,6 +91,8 @@ model AiScore {
   createdAt     DateTime    @default(now())
 
   application   Application @relation(fields: [applicationId], references: [id])
+
+  @@index([applicationId])
 }
 
 model Reminder {
@@ -99,6 +104,8 @@ model Reminder {
 
   user          User        @relation(fields: [userId], references: [id])
   application   Application @relation(fields: [applicationId], references: [id])
+
+  @@index([sent, sendAt])
 }
 
 model Resume {
