@@ -22,11 +22,14 @@ import {
   Target,
   Flame,
   Edit3,
+  Download,
+  Calculator,
 } from "lucide-react";
 import api from "../lib/api";
 import { ApplicationModal } from "../components/ApplicationModal";
 import { AiScoreModal } from "../components/AiScoreModal";
 import { ReminderModal } from "../components/ReminderModal";
+import { OfferCalculatorModal } from "../components/OfferCalculatorModal";
 
 const COLUMNS = [
   { id: "APPLIED", label: "Applied", color: "border-sky-500/40 bg-sky-500/10 text-sky-300" },
@@ -49,6 +52,24 @@ export const DashboardPage = () => {
   const [editingApp, setEditingApp] = useState(null);
   const [aiApp, setAiApp] = useState(null);
   const [reminderApp, setReminderApp] = useState(null);
+  const [calcOpen, setCalcOpen] = useState(false);
+
+  const handleExport = async (format) => {
+    try {
+      const res = await api.get(`/applications/export?format=${format}`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `hireiq-applications-backup.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error("Export failed:", err);
+    }
+  };
 
   // Public Profile Showcase State
   const [publicProfile, setPublicProfile] = useState(null);
@@ -291,6 +312,34 @@ export const DashboardPage = () => {
               }`}
             >
               <TableIcon className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Offer Compensation Calculator Trigger */}
+          <button
+            onClick={() => setCalcOpen(true)}
+            className="px-3 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-sm font-semibold flex items-center gap-1.5 transition-colors"
+          >
+            <Calculator className="w-4 h-4" />
+            <span>Compare Offers</span>
+          </button>
+
+          {/* Backup & Export Group */}
+          <div className="flex bg-slate-900 border border-slate-800 rounded-xl overflow-hidden text-xs">
+            <button
+              onClick={() => handleExport("csv")}
+              className="px-3 py-2.5 hover:bg-slate-800 text-slate-300 flex items-center gap-1 transition-colors border-r border-slate-800 font-semibold"
+              title="Download CSV Spreadsheet"
+            >
+              <Download className="w-3.5 h-3.5 text-sky-400" />
+              <span>CSV</span>
+            </button>
+            <button
+              onClick={() => handleExport("json")}
+              className="px-3 py-2.5 hover:bg-slate-800 text-slate-300 flex items-center gap-1 transition-colors font-semibold"
+              title="Download JSON Backup"
+            >
+              <span>JSON</span>
             </button>
           </div>
 
@@ -731,6 +780,10 @@ export const DashboardPage = () => {
         isOpen={!!reminderApp}
         onClose={() => setReminderApp(null)}
         application={reminderApp}
+      />
+      <OfferCalculatorModal
+        isOpen={calcOpen}
+        onClose={() => setCalcOpen(false)}
       />
     </div>
   );

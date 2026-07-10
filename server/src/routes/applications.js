@@ -6,7 +6,7 @@
 const express = require("express");
 const router = express.Router();
 const verifyToken = require("../middleware/verifyToken.js");
-const { getApplications, createApplication, getApplication, updateApplication, deleteApplication } = require("../controllers/applications.controller.js");
+const { getApplications, createApplication, getApplication, updateApplication, deleteApplication, exportApplications } = require("../controllers/applications.controller.js");
 const { scoreResume } = require("../controllers/ai.controller.js");
 const { validate, applicationSchema, updateApplicationSchema } = require("../middleware/validate.js");
 
@@ -20,6 +20,9 @@ const { validate, applicationSchema, updateApplicationSchema } = require("../mid
 // STEP 4: GET /  → list all applications (with filter/sort/pagination)
 // No body validation needed for GET requests!
 router.get("/", verifyToken, getApplications);
+
+// Export Applications (CSV / JSON backup)
+router.get("/export", verifyToken, exportApplications);
 
 // STEP 5: POST /  → create a new application
 // Order matters: verifyToken FIRST (must be logged in), then validate body, then controller

@@ -186,10 +186,58 @@ const deleteApplication = async (req, res, next) => {
   }
 };
 
+// ─── EXPORT APPLICATIONS (CSV / JSON) ─────────────────────────────────────────
+// GET /api/applications/export?format=csv|json
+const exportApplications = async (req, res, next) => {
+  try {
+    const { format = "csv" } = req.query;
+
+    const applications = await prisma.application.findMany({
+      where: { userId: req.userId, deletedAt: null },
+      orderBy: { appliedAt: "desc" },
+    });
+
+    if (format.toLowerCase() === "json") {
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Content-Disposition", `attachment; filename="hireiq-applications-${new Date().toISOString().slice(0, 10)}.json"`);
+      return res.send(JSON.stringify(applications, null, 2));
+    }
+
+    // CSV format
+    const headers = ["ID", "Company", "Role", "Status", "Applied At", "Interview Date", "Tags", "Notes", "Job Description URL"];
+    const escapeCsv = (val) => {
+      if (val === null || val === undefined) return '""';
+      const str = Array.isArray(val) ? val.join("; ") : String(val);
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+
+    const rows = applications.map((app) => [
+      escapeCsv(app.id),
+      escapeCsv(app.company),
+      escapeCsv(app.role),
+      escapeCsv(app.status),
+      escapeCsv(app.appliedAt ? new Date(app.appliedAt).toISOString().slice(0, 10) : ""),
+      escapeCsv(app.interviewDate ? new Date(app.interviewDate).toISOString() : ""),
+      escapeCsv(app.tags),
+      escapeCsv(app.notes),
+      escapeCsv(app.jdUrl),
+    ].join(","));
+
+    const csvContent = [headers.join(","), ...rows].join("\n");
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename="hireiq-applications-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.send(csvContent);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getApplications,
   createApplication,
   getApplication,
   updateApplication,
   deleteApplication,
+  exportApplications,
 };
