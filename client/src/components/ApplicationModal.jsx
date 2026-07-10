@@ -71,11 +71,22 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
     }
   };
 
+  const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && isOpen) onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+    setFormError("");
     try {
       await onSave({
         company,
@@ -88,14 +99,18 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
       });
       onClose();
     } catch (err) {
-      console.error("Failed to save application:", err);
+      setFormError(err.response?.data?.error || "Failed to save application. Please check inputs.");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+    >
       <div className="glass-card w-full max-w-lg p-6 relative animate-in fade-in zoom-in-95 duration-200">
         <button
           onClick={onClose}
@@ -108,6 +123,12 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
           <Briefcase className="w-5 h-5 text-sky-400" />
           {initialData ? "Edit Job Application" : "Track New Application"}
         </h2>
+
+        {formError && (
+          <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg text-rose-400 text-xs">
+            {formError}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
