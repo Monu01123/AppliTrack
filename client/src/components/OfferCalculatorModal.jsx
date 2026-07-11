@@ -1,5 +1,12 @@
+// src/components/OfferCalculatorModal.jsx
+//
+// Offer Compensation Comparison Calculator — Corkboard / Pinned Index Card reskin.
+// All state, calculation logic, and CRUD operations are 100% unchanged.
+
 import React, { useState } from "react";
 import { X, Calculator, Plus, Trash2, Award, DollarSign, CheckCircle2 } from "lucide-react";
+
+const ROTATIONS = ["cork-card-r1", "cork-card-r2", "cork-card-r3", "cork-card-r4"];
 
 export const OfferCalculatorModal = ({ isOpen, onClose }) => {
   const [offers, setOffers] = useState([
@@ -36,121 +43,326 @@ export const OfferCalculatorModal = ({ isOpen, onClose }) => {
   const maxTC = offers.length > 0 ? Math.max(...offers.map(calculateTC)) : 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="glass-card max-w-4xl w-full p-6 sm:p-8 bg-slate-900 border border-slate-800 space-y-6 max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
-              <Calculator className="w-5 h-5 text-emerald-400" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Offer Compensation Comparison Calculator</h2>
-              <p className="text-xs text-slate-400">
-                Compare Base Salary, Signing Bonus, and Equity side by side to evaluate Total Compensation (TC).
-              </p>
-            </div>
+    <div
+      role="dialog"
+      aria-modal="true"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "1rem",
+        background: "rgba(31,28,23,0.5)",
+        backdropFilter: "blur(3px)",
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        style={{
+          background: "var(--wall)",
+          borderRadius: 3,
+          boxShadow: "0 20px 60px rgba(0,0,0,0.22)",
+          width: "100%",
+          maxWidth: 960,
+          maxHeight: "90vh",
+          overflowY: "auto",
+          position: "relative",
+          padding: "2rem",
+          border: "1px solid rgba(31,28,23,0.15)",
+        }}
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="btn-icon"
+          style={{ position: "absolute", top: "1.25rem", right: "1.25rem" }}
+          title="Close"
+        >
+          <X size={20} />
+        </button>
+
+        {/* ── Header ── */}
+        <div style={{ marginBottom: "1.75rem", borderBottom: "1px dashed rgba(31,28,23,0.18)", paddingBottom: "1.25rem" }}>
+          <div className="tape-label" style={{ marginBottom: "0.5rem" }}>
+            side-by-side analysis
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+            <Calculator size={22} style={{ color: "var(--stamp-blue)" }} />
+            <h2
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "1.6rem",
+                fontWeight: 700,
+                color: "var(--ink)",
+                margin: 0,
+              }}
+            >
+              Offer Compensation Calculator
+            </h2>
+          </div>
+          <p
+            style={{
+              fontFamily: "var(--font-ui)",
+              fontSize: "0.85rem",
+              color: "var(--grey)",
+              marginTop: "0.35rem",
+            }}
           >
-            <X className="w-5 h-5" />
-          </button>
+            Compare Base Salary, Signing/Annual Bonus, and Equity side by side to evaluate true Total Compensation (TC).
+          </p>
         </div>
 
-        {/* Action button */}
-        <div className="flex justify-between items-center">
-          <span className="text-xs font-semibold text-slate-400 uppercase">
-            Comparing {offers.length} Offer Packages
+        {/* ── Action bar ── */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "1rem",
+            marginBottom: "1.5rem",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-stamp)",
+              fontSize: "0.7rem",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "var(--grey)",
+            }}
+          >
+            Comparing {offers.length} Offer Package{offers.length !== 1 ? "s" : ""}
           </span>
-          <button
-            onClick={handleAddOffer}
-            className="btn-primary flex items-center gap-1.5 text-xs py-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Offer to Compare</span>
+          <button onClick={handleAddOffer} className="btn-cork" style={{ fontSize: "0.8125rem" }}>
+            <Plus size={15} /> Add Offer to Compare
           </button>
         </div>
 
-        {/* Offers Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {offers.map((offer) => {
+        {/* ── Offers Grid ── */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gap: "1.5rem",
+            alignItems: "start",
+          }}
+        >
+          {offers.map((offer, i) => {
             const tc = calculateTC(offer);
             const isHighest = offers.length > 1 && tc === maxTC && tc > 0;
+            const rotClass = ROTATIONS[i % ROTATIONS.length];
 
             return (
               <div
                 key={offer.id}
-                className={`glass-card p-5 relative border transition-all ${
-                  isHighest
-                    ? "border-emerald-500/60 bg-gradient-to-b from-emerald-950/30 to-slate-900 shadow-lg shadow-emerald-500/10"
-                    : "border-slate-800 bg-slate-900/60"
-                }`}
+                className={`cork-card ${rotClass}`}
+                style={{
+                  border: isHighest ? "2px solid var(--stamp-green)" : "1px solid rgba(31,28,23,0.12)",
+                  background: isHighest ? "#F5F8F2" : "var(--card)",
+                  position: "relative",
+                }}
               >
+                {/* Highest TC rubber stamp badge */}
                 {isHighest && (
-                  <span className="absolute -top-3 right-4 px-3 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-extrabold text-[10px] uppercase flex items-center gap-1 shadow-md">
-                    <Award className="w-3 h-3" />
-                    Highest TC
-                  </span>
+                  <div style={{ marginBottom: "0.75rem" }}>
+                    <span className="stamp stamp-offer" style={{ fontSize: "0.62rem" }}>
+                      ★ HIGHEST TOTAL COMP
+                    </span>
+                  </div>
                 )}
 
-                <div className="flex items-center justify-between mb-4">
+                {/* Company Name + Delete */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "0.5rem",
+                    marginBottom: "1rem",
+                  }}
+                >
                   <input
                     type="text"
                     value={offer.company}
+                    placeholder="Company Name"
                     onChange={(e) => handleUpdateOffer(offer.id, "company", e.target.value)}
-                    className="bg-transparent border-b border-slate-700 focus:border-sky-500 text-white font-bold text-base outline-none w-40"
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      fontSize: "1.15rem",
+                      fontWeight: 700,
+                      color: "var(--ink)",
+                      background: "transparent",
+                      border: "none",
+                      borderBottom: "1.5px dashed rgba(31,28,23,0.25)",
+                      padding: "0.2rem 0",
+                      width: "100%",
+                      outline: "none",
+                    }}
                   />
                   {offers.length > 1 && (
                     <button
                       onClick={() => handleRemoveOffer(offer.id)}
-                      className="text-slate-500 hover:text-rose-400 transition-colors p-1"
+                      className="btn-icon btn-icon-danger"
+                      title="Remove offer"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 size={15} />
                     </button>
                   )}
                 </div>
 
-                <div className="space-y-3 text-xs">
+                {/* Inputs */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                   <div>
-                    <label className="text-slate-400 font-medium block mb-1">Base Salary ($)</label>
+                    <label
+                      style={{
+                        display: "block",
+                        fontFamily: "var(--font-ui)",
+                        fontSize: "0.68rem",
+                        fontWeight: 600,
+                        letterSpacing: "0.07em",
+                        textTransform: "uppercase",
+                        color: "var(--grey)",
+                        marginBottom: "0.25rem",
+                      }}
+                    >
+                      Base Salary ($)
+                    </label>
                     <input
                       type="number"
                       value={offer.base}
                       onChange={(e) => handleUpdateOffer(offer.id, "base", e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono"
+                      className="cork-input no-icon"
+                      style={{ padding: "0.45rem 0.75rem" }}
                     />
                   </div>
+
                   <div>
-                    <label className="text-slate-400 font-medium block mb-1">Signing / Annual Bonus ($)</label>
+                    <label
+                      style={{
+                        display: "block",
+                        fontFamily: "var(--font-ui)",
+                        fontSize: "0.68rem",
+                        fontWeight: 600,
+                        letterSpacing: "0.07em",
+                        textTransform: "uppercase",
+                        color: "var(--grey)",
+                        marginBottom: "0.25rem",
+                      }}
+                    >
+                      Signing / Annual Bonus ($)
+                    </label>
                     <input
                       type="number"
                       value={offer.bonus}
                       onChange={(e) => handleUpdateOffer(offer.id, "bonus", e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono"
+                      className="cork-input no-icon"
+                      style={{ padding: "0.45rem 0.75rem" }}
                     />
                   </div>
+
                   <div>
-                    <label className="text-slate-400 font-medium block mb-1">Annual Equity ($)</label>
+                    <label
+                      style={{
+                        display: "block",
+                        fontFamily: "var(--font-ui)",
+                        fontSize: "0.68rem",
+                        fontWeight: 600,
+                        letterSpacing: "0.07em",
+                        textTransform: "uppercase",
+                        color: "var(--grey)",
+                        marginBottom: "0.25rem",
+                      }}
+                    >
+                      Annual Equity ($)
+                    </label>
                     <input
                       type="number"
                       value={offer.equity}
                       onChange={(e) => handleUpdateOffer(offer.id, "equity", e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono"
+                      className="cork-input no-icon"
+                      style={{ padding: "0.45rem 0.75rem" }}
                     />
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontFamily: "var(--font-ui)",
+                        fontSize: "0.68rem",
+                        fontWeight: 600,
+                        letterSpacing: "0.07em",
+                        textTransform: "uppercase",
+                        color: "var(--grey)",
+                        marginBottom: "0.25rem",
+                      }}
+                    >
+                      Work Arrangement
+                    </label>
+                    <select
+                      value={offer.type}
+                      onChange={(e) => handleUpdateOffer(offer.id, "type", e.target.value)}
+                      className="cork-input no-icon"
+                      style={{ padding: "0.45rem 0.75rem", cursor: "pointer" }}
+                    >
+                      <option value="Remote">Remote</option>
+                      <option value="Hybrid">Hybrid</option>
+                      <option value="On-site">On-site</option>
+                    </select>
                   </div>
                 </div>
 
-                {/* Total Comp Box */}
-                <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+                <hr className="cork-divider" />
+
+                {/* Total Comp display */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "baseline",
+                    justifyContent: "space-between",
+                    paddingTop: "0.25rem",
+                  }}
+                >
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Comp (TC)</span>
-                    <span className="text-lg font-extrabold text-emerald-400 font-mono">
+                    <span
+                      style={{
+                        fontFamily: "var(--font-stamp)",
+                        fontSize: "0.62rem",
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: "var(--grey)",
+                        display: "block",
+                      }}
+                    >
+                      Total Comp (TC)
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontSize: "1.45rem",
+                        fontWeight: 700,
+                        color: isHighest ? "var(--stamp-green)" : "var(--ink)",
+                      }}
+                    >
                       ${tc.toLocaleString()}
                     </span>
                   </div>
-                  <span className="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium">
+                  <span
+                    style={{
+                      fontFamily: "var(--font-ui)",
+                      fontSize: "0.7rem",
+                      padding: "2px 8px",
+                      background: "var(--tape)",
+                      borderRadius: 1,
+                      color: "var(--ink)",
+                      fontWeight: 600,
+                    }}
+                  >
                     {offer.type}
                   </span>
                 </div>
@@ -159,12 +371,17 @@ export const OfferCalculatorModal = ({ isOpen, onClose }) => {
           })}
         </div>
 
-        {/* Footer */}
-        <div className="flex justify-end pt-2">
-          <button
-            onClick={onClose}
-            className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm transition-colors"
-          >
+        {/* ── Footer ── */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            marginTop: "2rem",
+            paddingTop: "1.25rem",
+            borderTop: "1px dashed rgba(31,28,23,0.18)",
+          }}
+        >
+          <button onClick={onClose} className="btn-cork">
             Done Comparing
           </button>
         </div>
