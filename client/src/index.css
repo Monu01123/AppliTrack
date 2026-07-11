@@ -353,8 +353,42 @@
   .cork-lane {
     background: var(--wall-2);
     border-radius: 3px;
-    min-height: 420px;
     padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 420px;
+    height: calc(100vh - 280px);
+    max-height: 800px;
+    position: relative;
+  }
+
+  .cork-lane::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 30px;
+    background: linear-gradient(transparent, var(--wall-2));
+    pointer-events: none;
+    border-radius: 0 0 3px 3px;
+  }
+
+  .cork-lane-scroll {
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 0.5rem;
+    margin-right: -0.25rem;
+    padding-top: 0.25rem;
+    padding-bottom: 1.5rem;
+    flex: 1;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .cork-lane-scroll::-webkit-scrollbar {
+    display: none;
   }
 
   /* ── 9. Divider line ────────────────────────────────────────────────────── */

@@ -581,7 +581,7 @@ export const DashboardPage = () => {
                   </span>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                <div className="cork-lane-scroll" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                   {colApps.map((app, i) => {
                     const badge = getInterviewBadge(app.interviewDate);
                     return (
