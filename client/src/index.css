@@ -1,83 +1,410 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   HIREIQ — CORKBOARD / PINNED INDEX CARD DESIGN SYSTEM
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── 1. Design Tokens ─────────────────────────────────────────────────────── */
+:root {
+  --wall:         #EFEAE0;   /* page background — rough plaster */
+  --wall-2:       #E7E1D4;   /* secondary bg tint — column lanes */
+  --ink:          #1F1C17;   /* primary text */
+  --grey:         #5C574C;   /* secondary text */
+  --card:         #FAF7F0;   /* index card surface */
+  --string:       #B23A2F;   /* accent red — CTAs, alerts */
+  --stamp-blue:   #2F4B7C;   /* Applied stamp */
+  --stamp-purple: #6D3F96;   /* Phone Screen stamp */
+  --stamp-amber:  #8B5E00;   /* Interview stamp */
+  --stamp-green:  #2D6A4F;   /* Offer stamp */
+  --stamp-grey:   #8A8A8A;   /* Ghosted / Rejected stamp */
+  --tape:         #E3D9A8;   /* washi tape accent */
+
+  --font-display:     'Fraunces', Georgia, serif;
+  --font-hand:        'Caveat', cursive;
+  --font-stamp:       'Special Elite', 'Courier New', monospace;
+  --font-ui:          'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+}
+
+/* ── 2. Base Reset ────────────────────────────────────────────────────────── */
 @layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    background-color: #F7F6F3;
-    /* Subtle plaster/stucco tactile wall texture */
-    background-image: radial-gradient(#EAE6DF 1px, transparent 1px);
-    background-size: 24px 24px;
-    color: #2D2B2A;
-    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--wall);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    /* Subtle plaster grain overlay via repeating SVG noise */
+    background-image:
+      radial-gradient(ellipse at 60% 0%, rgba(179,58,47,0.04) 0%, transparent 55%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    background-size: auto, 200px 200px;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+
+  a {
+    color: var(--string);
+    text-decoration: underline;
+  }
+
+  button {
+    cursor: pointer;
+    font-family: var(--font-ui);
+  }
+
+  input, select, textarea {
+    font-family: var(--font-ui);
   }
 }
 
+/* ── 3. Cork Card (pinned index card) ────────────────────────────────────── */
 @layer utilities {
-  .tactile-card, .glass-card {
-    background-color: #FAF9F6;
-    border: 1px solid #EBE8E1;
-    border-radius: 1rem; /* 16px */
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.02);
+  .cork-card {
+    position: relative;
+    background: var(--card);
+    border-radius: 3px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.08);
+    padding: 1.25rem;
+    /* Pin at top center */
+    padding-top: 1.75rem;
   }
 
-  .carved-box {
-    background-color: #F3F1EC;
-    border: 1px solid #E5E1D8;
-    border-radius: 0.875rem;
-    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.06), inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  /* The metal push-pin */
+  .cork-card::before {
+    content: '';
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 32%, #e8e4da, #a09b92 55%, #6b6560);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.4);
+    z-index: 2;
   }
 
-  .glass-input {
+  /* Rotation variants — applied via nth-child or explicit classes */
+  .cork-card-r1 { transform: rotate(-2deg); }
+  .cork-card-r2 { transform: rotate(1.5deg); }
+  .cork-card-r3 { transform: rotate(-0.8deg); }
+  .cork-card-r4 { transform: rotate(2deg); }
+  .cork-card-r5 { transform: rotate(-1.5deg); }
+  .cork-card-r6 { transform: rotate(0.5deg); }
+
+  /* No rotation variant (modals, dialogs, stat cards that don't need it) */
+  .cork-card-flat {
+    position: relative;
+    background: var(--card);
+    border-radius: 3px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.08);
+    padding: 1.25rem;
+    padding-top: 1.75rem;
+  }
+
+  .cork-card-flat::before {
+    content: '';
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 32%, #e8e4da, #a09b92 55%, #6b6560);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.4);
+    z-index: 2;
+  }
+
+  /* Stat card — small version, left-side pin */
+  .cork-stat-card {
+    position: relative;
+    background: var(--card);
+    border-radius: 3px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.14), 0 2px 4px rgba(0,0,0,0.06);
+    padding: 1.25rem;
+    padding-top: 1.5rem;
+  }
+
+  .cork-stat-card::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 32%, #e8e4da, #a09b92 55%, #6b6560);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.35);
+    z-index: 2;
+  }
+
+  /* ── 4. Rubber Stamp (status badge) ────────────────────────────────────── */
+  .stamp {
+    font-family: var(--font-stamp);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1.5px solid currentColor;
+    padding: 2px 7px;
+    border-radius: 2px;
+    display: inline-block;
+    opacity: 0.82;
+    transform: rotate(-7deg);
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+
+  .stamp-applied   { color: var(--stamp-blue);   }
+  .stamp-phone     { color: var(--stamp-purple);  }
+  .stamp-interview { color: var(--stamp-amber);   }
+  .stamp-offer     { color: var(--stamp-green);   }
+  .stamp-rejected  { color: var(--stamp-grey);    }
+  .stamp-ghosted   { color: var(--stamp-grey);    }
+  .stamp-pending   { color: var(--string);        }
+  .stamp-sent      { color: var(--stamp-green);   }
+
+  /* ── 5. Washi Tape Label ────────────────────────────────────────────────── */
+  .tape-label {
+    display: inline-block;
+    background: var(--tape);
+    color: var(--ink);
+    font-family: var(--font-stamp);
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 14px;
+    transform: rotate(-1deg);
+    opacity: 0.9;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  /* ── 6. Buttons ─────────────────────────────────────────────────────────── */
+  .btn-cork {
+    background: var(--ink);
+    color: var(--wall);
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    padding: 0.6rem 1.25rem;
+    border: none;
+    border-radius: 2px;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.18);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .btn-cork:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 rgba(0,0,0,0.22);
+  }
+
+  .btn-cork:active {
+    transform: translate(0, 0);
+    box-shadow: 1px 1px 0 rgba(0,0,0,0.18);
+  }
+
+  .btn-cork:disabled {
+    opacity: 0.55;
+    transform: none;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.12);
+    cursor: not-allowed;
+  }
+
+  /* Secondary button — outline style */
+  .btn-cork-outline {
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-weight: 500;
+    font-size: 0.8125rem;
+    padding: 0.55rem 1.1rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 2px;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.12);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+  }
+
+  .btn-cork-outline:hover {
+    background: rgba(31,28,23,0.06);
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.14);
+  }
+
+  /* String/red link button */
+  .btn-string {
+    background: none;
+    border: none;
+    color: var(--string);
+    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .btn-string:hover {
+    opacity: 0.75;
+  }
+
+  /* Icon button */
+  .btn-icon {
+    background: none;
+    border: none;
+    color: var(--grey);
+    padding: 0.35rem;
+    border-radius: 2px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.1s, background 0.1s;
+  }
+
+  .btn-icon:hover {
+    color: var(--ink);
+    background: rgba(31,28,23,0.06);
+  }
+
+  .btn-icon-danger:hover {
+    color: var(--string);
+    background: rgba(178,58,47,0.08);
+  }
+
+  /* Small action badge button (AI Score, Remind) */
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-family: var(--font-stamp);
+    font-size: 0.6rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    background: transparent;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.15s;
+  }
+
+  .btn-action:hover {
+    opacity: 1;
+  }
+
+  /* ── 7. Form Inputs ─────────────────────────────────────────────────────── */
+  .cork-input {
     display: block;
     width: 100%;
-    background-color: #F3F1EC;
-    border: 1px solid #E5E1D8;
-    border-radius: 0.75rem;
-    padding: 0.625rem 1rem 0.625rem 2.75rem; /* default: space for icon on left */
-    color: #2D2B2A;
+    background: var(--card);
+    border: 1.5px solid rgba(31,28,23,0.22);
+    border-radius: 2px;
+    padding: 0.6rem 1rem 0.6rem 2.5rem;
+    color: var(--ink);
+    font-family: var(--font-ui);
     font-size: 0.875rem;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);
-    transition: all 0.2s ease;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
-  .glass-input::placeholder {
-    color: #B5A397;
+
+  .cork-input::placeholder {
+    color: #A09B92;
   }
-  .glass-input:focus {
+
+  .cork-input:focus {
     outline: none;
-    border-color: #9C8170;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 3px rgba(156, 129, 112, 0.15);
+    border-color: var(--ink);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.04), 3px 3px 0 rgba(31,28,23,0.1);
   }
-  /* No-icon variant: remove extra left padding */
-  .glass-input.no-icon {
+
+  .cork-input.no-icon {
     padding-left: 1rem;
   }
 
-  .btn-primary {
-    background-color: #2D2B2A;
-    color: #FAF9F6;
-    font-weight: 500;
-    padding: 0.625rem 1.25rem;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 12px rgba(45, 43, 42, 0.15);
-    transition: all 0.2s ease;
-  }
-  .btn-primary:hover {
-    background-color: #3E3B3A;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(45, 43, 42, 0.2);
+  /* ── 8. Column Lane (kanban column background) ──────────────────────────── */
+  .cork-lane {
+    background: var(--wall-2);
+    border-radius: 3px;
+    min-height: 420px;
+    padding: 0.75rem;
   }
 
-  .btn-secondary {
-    background-color: #EDEAE4;
-    color: #2D2B2A;
-    font-weight: 500;
-    padding: 0.625rem 1.25rem;
-    border-radius: 0.75rem;
-    border: 1px solid #DCD8CF;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-    transition: all 0.2s ease;
+  /* ── 9. Divider line ────────────────────────────────────────────────────── */
+  .cork-divider {
+    border: none;
+    border-top: 1px dashed rgba(31,28,23,0.15);
+    margin: 0.75rem 0;
   }
-  .btn-secondary:hover {
-    background-color: #E4DFD7;
+
+  /* ── 10. Page section header with tape eyebrow ──────────────────────────── */
+  .cork-section-header {
+    margin-bottom: 1.5rem;
   }
+
+  /* ── 11. Spinner ─────────────────────────────────────────────────────────── */
+  .cork-spinner {
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 3px solid rgba(31,28,23,0.12);
+    border-top-color: var(--ink);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ── 12. Responsive: reduce rotation on small screens ───────────────────── */
+  @media (max-width: 640px) {
+    .cork-card-r1,
+    .cork-card-r2,
+    .cork-card-r3,
+    .cork-card-r4,
+    .cork-card-r5,
+    .cork-card-r6 {
+      transform: none;
+    }
+  }
+
+  /* Backwards compat aliases so nothing that references old classes hard-crashes */
+  .glass-card    { background: var(--card); border-radius: 3px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .tactile-card  { background: var(--card); border-radius: 3px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .carved-box    { background: var(--wall-2); border-radius: 3px; }
+  .glass-input   { background: var(--card); border: 1.5px solid rgba(31,28,23,0.22); border-radius: 2px; padding: 0.6rem 1rem 0.6rem 2.5rem; color: var(--ink); font-family: var(--font-ui); font-size: 0.875rem; display: block; width: 100%; }
+  .glass-input.no-icon { padding-left: 1rem; }
+  .glass-input:focus { outline: none; border-color: var(--ink); }
+  .glass-input::placeholder { color: #A09B92; }
+  .btn-primary   { background: var(--ink); color: var(--wall); font-family: var(--font-ui); font-weight: 600; padding: 0.6rem 1.25rem; border: none; border-radius: 2px; box-shadow: 3px 3px 0 rgba(0,0,0,0.18); cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8125rem; }
+  .btn-primary:hover { transform: translate(-2px,-2px); box-shadow: 5px 5px 0 rgba(0,0,0,0.22); }
+  .btn-secondary { background: transparent; color: var(--ink); border: 1.5px solid var(--ink); padding: 0.55rem 1.1rem; border-radius: 2px; font-family: var(--font-ui); font-size: 0.8125rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; }
+  .btn-secondary:hover { background: rgba(31,28,23,0.06); }
 }

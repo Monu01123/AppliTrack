@@ -1,134 +1,202 @@
 // src/components/Navbar.jsx
 //
-// Vertical Sidebar (desktop) + Compact Header (mobile) — only real app routes.
+// Horizontal top-bar navigation — Corkboard design system.
+// 3-column layout: Logo | Nav links (centered) | User info + Sign-out
 
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import {
-  LayoutDashboard,
-  Briefcase,
-  BarChart2,
-  Bell,
-  LogOut,
-  Sparkles,
-} from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 
-const NAV_ITEMS = [
-  { to: "/",            label: "Overview",     Icon: LayoutDashboard },
-  { to: "/applications",label: "Applications", Icon: Briefcase       },
-  { to: "/analytics",   label: "Funnel",       Icon: BarChart2       },
-  { to: "/reminders",   label: "Reminders",    Icon: Bell            },
+const NAV_LINKS = [
+  { to: "/",             label: "Overview"     },
+  { to: "/applications", label: "Applications" },
+  { to: "/analytics",    label: "Funnel Stats" },
+  { to: "/reminders",    label: "Reminders"    },
 ];
+
+// Tiny SVG push-pin for the logo
+const PinIcon = () => (
+  <svg width="16" height="20" viewBox="0 0 16 20" fill="none" aria-hidden="true">
+    <ellipse cx="8" cy="6.5" rx="6.5" ry="6.5" fill="#B23A2F" />
+    <ellipse cx="8" cy="5.5" rx="3.5" ry="3.5" fill="rgba(255,255,255,0.18)" />
+    <rect x="7" y="12" width="2" height="7" rx="1" fill="#8A7060" />
+  </svg>
+);
 
 export const Navbar = () => {
   const { user, logout } = useAuth();
-  const location = useLocation();
+  const location         = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   if (!user) return null;
 
   const isActive = (path) =>
-    path === "/"
-      ? location.pathname === "/"
-      : location.pathname.startsWith(path);
-
-  const userInitial = (user.name || user.email || "U").charAt(0).toUpperCase();
+    path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
   return (
-    <>
-      {/* ── Desktop Vertical Sidebar ── */}
-      <aside className="hidden md:flex flex-col w-60 min-h-screen bg-[#F7F6F3] border-r border-[#EBE8E1] p-5 justify-between select-none shrink-0">
-        <div>
-          {/* Brand */}
-          <Link to="/" className="flex items-center gap-2.5 mb-8 px-2 group">
-            <div className="w-8 h-8 rounded-lg bg-[#FAF9F6] border border-[#EBE8E1] shadow-sm flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Sparkles className="w-4 h-4 text-[#9C8170]" />
-            </div>
-            <span className="text-lg font-bold tracking-tight text-[#2D2B2A]">
+    <header
+      style={{
+        background: "var(--wall)",
+        borderBottom: "1px solid rgba(31,28,23,0.13)",
+        position: "sticky",
+        top: 0,
+        zIndex: 50,
+      }}
+    >
+      {/* ── Desktop nav — 3-column flex ── */}
+      <div
+        style={{
+          maxWidth: 1400,
+          margin: "0 auto",
+          padding: "0 1.5rem",
+          height: 56,
+          display: "flex",
+          alignItems: "center",
+          gap: "1rem",
+        }}
+      >
+        {/* Col 1: Logo (fixed width so center column is truly centered) */}
+        <div style={{ flex: "0 0 140px", display: "flex", alignItems: "center" }}>
+          <Link
+            to="/"
+            style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}
+          >
+            <PinIcon />
+            <span
+              style={{
+                fontFamily: "var(--font-display)",
+                fontWeight: 700,
+                fontSize: "1.2rem",
+                letterSpacing: "-0.02em",
+                color: "var(--ink)",
+              }}
+            >
               HireIQ
             </span>
           </Link>
+        </div>
 
-          {/* Nav Links */}
-          <nav className="space-y-1">
-            {NAV_ITEMS.map(({ to, label, Icon }) => (
+        {/* Col 2: Nav links — centered, desktop only */}
+        <nav
+          className="hidden md:flex"
+          style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: "0.25rem" }}
+        >
+          {NAV_LINKS.map(({ to, label }) => {
+            const active = isActive(to);
+            return (
               <Link
                 key={to}
                 to={to}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  isActive(to)
-                    ? "bg-[#FAF9F6] text-[#2D2B2A] border border-[#EBE8E1] shadow-[0_1px_6px_rgba(0,0,0,0.05)] font-semibold"
-                    : "text-[#6E6B6B] hover:text-[#2D2B2A] hover:bg-[#FAF9F6]/70"
-                }`}
+                style={{
+                  fontFamily: "var(--font-ui)",
+                  fontSize: "0.875rem",
+                  fontWeight: active ? 600 : 400,
+                  color: active ? "var(--ink)" : "var(--grey)",
+                  textDecoration: "none",
+                  padding: "0.4rem 0.9rem",
+                  position: "relative",
+                  transition: "color 0.15s",
+                  whiteSpace: "nowrap",
+                }}
               >
-                <Icon
-                  className={`w-4 h-4 shrink-0 ${
-                    isActive(to) ? "text-[#9C8170]" : "text-[#B5A397]"
-                  }`}
-                />
                 {label}
+                {active && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      bottom: -1,
+                      left: "0.9rem",
+                      right: "0.9rem",
+                      height: "2px",
+                      background: "var(--string)",
+                      borderRadius: "1px",
+                    }}
+                  />
+                )}
               </Link>
-            ))}
-          </nav>
+            );
+          })}
+        </nav>
+
+        {/* Col 3: User info + Logout — fixed width, right-aligned, desktop only */}
+        <div
+          className="hidden md:flex"
+          style={{ flex: "0 0 140px", justifyContent: "flex-end", alignItems: "center", gap: "0.75rem" }}
+        >
+          <div style={{ textAlign: "right" }}>
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.78rem", fontWeight: 600, color: "var(--ink)", margin: 0, lineHeight: 1.2 }}>
+              {user.name || "User"}
+            </p>
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.68rem", color: "var(--grey)", margin: 0, lineHeight: 1.2, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {user.email}
+            </p>
+          </div>
+          <button onClick={logout} title="Sign out" className="btn-icon btn-icon-danger" style={{ padding: "0.35rem", flexShrink: 0 }}>
+            <LogOut size={15} />
+          </button>
         </div>
 
-        {/* User Profile */}
-        <div className="pt-4 border-t border-[#EBE8E1] flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-full bg-[#EAE6DF] border border-[#DCD8CF] flex items-center justify-center text-sm font-bold text-[#2D2B2A] shrink-0">
-              {userInitial}
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-[#2D2B2A] truncate leading-tight">
+        {/* Mobile hamburger — far right, only on small screens */}
+        <button
+          className="flex items-center md:hidden ml-auto"
+          onClick={() => setMobileOpen((v) => !v)}
+          aria-label="Toggle menu"
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink)", padding: "0.35rem" }}
+        >
+          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
+
+      {/* ── Mobile dropdown menu ── */}
+      {mobileOpen && (
+        <div
+          className="md:hidden"
+          style={{
+            background: "var(--wall)",
+            borderTop: "1px solid rgba(31,28,23,0.1)",
+            padding: "0.5rem 1.5rem 1rem",
+          }}
+        >
+          {NAV_LINKS.map(({ to, label }) => {
+            const active = isActive(to);
+            return (
+              <Link
+                key={to}
+                to={to}
+                onClick={() => setMobileOpen(false)}
+                style={{
+                  display: "block",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: "0.9rem",
+                  fontWeight: active ? 600 : 400,
+                  color: active ? "var(--ink)" : "var(--grey)",
+                  textDecoration: "none",
+                  padding: "0.55rem 0",
+                  borderBottom: "1px solid rgba(31,28,23,0.07)",
+                }}
+              >
+                {label}
+              </Link>
+            );
+          })}
+
+          {/* User + logout at bottom of mobile menu */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "0.75rem" }}>
+            <div>
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.8rem", fontWeight: 600, color: "var(--ink)", margin: 0 }}>
                 {user.name || "User"}
               </p>
-              <p className="text-[11px] text-[#6E6B6B] truncate leading-tight">
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.72rem", color: "var(--grey)", margin: 0 }}>
                 {user.email}
               </p>
             </div>
+            <button onClick={logout} className="btn-icon btn-icon-danger" style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem" }}>
+              <LogOut size={15} /> Sign out
+            </button>
           </div>
-          <button
-            onClick={logout}
-            title="Log out"
-            className="p-2 rounded-lg text-[#B5A397] hover:text-[#BA6856] hover:bg-[#FAF9F6] transition-colors shrink-0"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
-      </aside>
-
-      {/* ── Mobile Top Header ── */}
-      <header className="md:hidden sticky top-0 z-50 bg-[#F7F6F3]/90 backdrop-blur-md border-b border-[#EBE8E1] px-4 py-3 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[#FAF9F6] border border-[#EBE8E1] flex items-center justify-center">
-            <Sparkles className="w-3.5 h-3.5 text-[#9C8170]" />
-          </div>
-          <span className="text-base font-bold text-[#2D2B2A]">HireIQ</span>
-        </Link>
-
-        <div className="flex items-center gap-1">
-          {NAV_ITEMS.map(({ to, Icon }) => (
-            <Link
-              key={to}
-              to={to}
-              className={`p-2 rounded-lg transition-colors ${
-                isActive(to)
-                  ? "text-[#2D2B2A] bg-[#FAF9F6] border border-[#EBE8E1]"
-                  : "text-[#6E6B6B] hover:text-[#2D2B2A]"
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-            </Link>
-          ))}
-          <button
-            onClick={logout}
-            className="p-2 rounded-lg text-[#B5A397] hover:text-[#BA6856]"
-            title="Log out"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
-        </div>
-      </header>
-    </>
+      )}
+    </header>
   );
 };

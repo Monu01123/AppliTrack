@@ -1,7 +1,7 @@
 // src/components/ApplicationModal.jsx
 //
-// Full-featured modal to Add or Edit a Job Application.
-// Styled with Rough White Elegance plaster theme.
+// Add / Edit Application modal — corkboard design system.
+// All fields, validation, and submit logic are 100% unchanged.
 
 import React, { useState, useEffect } from "react";
 import { X, Briefcase, Building2 } from "lucide-react";
@@ -19,16 +19,16 @@ const STATUS_OPTIONS = [
 const SUGGESTED_TAGS = ["Referral", "Cold Apply", "Dream Company", "Startup", "Remote"];
 
 export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }) => {
-  const [company, setCompany] = useState("");
-  const [role, setRole] = useState("");
-  const [status, setStatus] = useState("APPLIED");
-  const [jdText, setJdText] = useState("");
-  const [notes, setNotes] = useState("");
-  const [tags, setTags] = useState([]);
-  const [tagInput, setTagInput] = useState("");
+  const [company, setCompany]         = useState("");
+  const [role, setRole]               = useState("");
+  const [status, setStatus]           = useState("APPLIED");
+  const [jdText, setJdText]           = useState("");
+  const [notes, setNotes]             = useState("");
+  const [tags, setTags]               = useState([]);
+  const [tagInput, setTagInput]       = useState("");
   const [interviewDate, setInterviewDate] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState("");
+  const [submitting, setSubmitting]   = useState(false);
+  const [formError, setFormError]     = useState("");
 
   const formatDateTimeLocal = (iso) => {
     if (!iso) return "";
@@ -82,174 +82,165 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
     }
   };
 
+  const Label = ({ children, extra }) => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.35rem" }}>
+      <label style={{ fontFamily: "var(--font-ui)", fontSize: "0.68rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--grey)" }}>
+        {children}
+      </label>
+      {extra}
+    </div>
+  );
+
   return (
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2D2B2A]/40 backdrop-blur-sm"
+      style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", background: "rgba(31,28,23,0.45)", backdropFilter: "blur(2px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-[#FAF9F6] border border-[#EBE8E1] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] w-full max-w-lg p-6 relative max-h-[90vh] overflow-y-auto">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 text-[#6E6B6B] hover:text-[#BA6856] hover:bg-[#F3F1EC] rounded-lg transition-colors"
-        >
-          <X className="w-5 h-5" />
+      <div
+        style={{ background: "var(--card)", borderRadius: 3, boxShadow: "0 20px 60px rgba(0,0,0,0.18)", width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", position: "relative", padding: "1.75rem" }}
+      >
+        {/* Close */}
+        <button onClick={onClose} className="btn-icon" style={{ position: "absolute", top: "1rem", right: "1rem" }}>
+          <X size={18} />
         </button>
 
         {/* Header */}
-        <h2 className="text-lg font-bold text-[#2D2B2A] mb-5 flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl carved-box flex items-center justify-center">
-            <Briefcase className="w-4 h-4 text-[#9C8170]" />
-          </div>
-          {initialData ? "Edit Application" : "Track New Application"}
-        </h2>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.25rem" }}>
+          <Briefcase size={18} style={{ color: "var(--grey)" }} />
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.2rem", fontWeight: 700, color: "var(--ink)", margin: 0 }}>
+            {initialData ? "Edit Application" : "Track New Application"}
+          </h2>
+        </div>
 
         {/* Error */}
         {formError && (
-          <div className="mb-4 p-3 bg-[#FDF2F0] border border-[#E8B8B0] rounded-xl text-[#BA6856] text-xs">
+          <div style={{ background: "rgba(178,58,47,0.08)", border: "1px solid rgba(178,58,47,0.25)", borderRadius: 2, padding: "0.6rem 0.875rem", marginBottom: "1rem", fontFamily: "var(--font-ui)", fontSize: "0.8rem", color: "var(--string)" }}>
             {formError}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           {/* Company */}
           <div>
-            <label className="block text-xs font-semibold text-[#2D2B2A] uppercase tracking-wider mb-1.5">
-              Company Name *
-            </label>
-            <div className="relative">
-              <Building2 className="w-4 h-4 text-[#9C8170] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Label>Company Name *</Label>
+            <div style={{ position: "relative" }}>
+              <Building2 size={14} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--grey)", pointerEvents: "none" }} />
               <input
                 type="text"
                 required
-                placeholder="Google, Microsoft, Stripe..."
+                placeholder="Google, Microsoft, Stripe…"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
-                className="glass-input"
+                className="cork-input"
               />
             </div>
           </div>
 
           {/* Role + Status */}
-          <div className="grid grid-cols-2 gap-4">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
             <div>
-              <label className="block text-xs font-semibold text-[#2D2B2A] uppercase tracking-wider mb-1.5">
-                Role / Title *
-              </label>
+              <Label>Role / Title *</Label>
               <input
                 type="text"
                 required
                 placeholder="Fullstack Engineer"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="glass-input no-icon"
+                className="cork-input no-icon"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#2D2B2A] uppercase tracking-wider mb-1.5">
-                Status
-              </label>
+              <Label>Status</Label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="glass-input no-icon appearance-none cursor-pointer"
+                className="cork-input no-icon"
+                style={{ appearance: "none", cursor: "pointer" }}
               >
-                {STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
+                {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
           </div>
 
           {/* Interview Date */}
           <div>
-            <label className="block text-xs font-semibold text-[#2D2B2A] uppercase tracking-wider mb-1.5 flex items-center justify-between">
-              <span>Interview Date / Time (Optional)</span>
-              {interviewDate && (
-                <button
-                  type="button"
-                  onClick={() => setInterviewDate("")}
-                  className="text-[10px] text-[#BA6856] hover:underline"
-                >
-                  Clear
-                </button>
-              )}
-            </label>
+            <Label extra={
+              interviewDate && (
+                <button type="button" onClick={() => setInterviewDate("")} className="btn-string" style={{ fontSize: "0.7rem" }}>Clear</button>
+              )
+            }>
+              Interview Date / Time (Optional)
+            </Label>
             <input
               type="datetime-local"
               value={interviewDate}
               onChange={(e) => setInterviewDate(e.target.value)}
-              className="glass-input no-icon text-sm"
+              className="cork-input no-icon"
             />
           </div>
 
           {/* Job Description */}
           <div>
-            <label className="block text-xs font-semibold text-[#2D2B2A] uppercase tracking-wider mb-1.5 flex items-center justify-between">
-              <span>Job Description (Optional)</span>
-              <span className="text-[10px] text-[#9C8170] normal-case font-normal">Required for AI scoring</span>
-            </label>
+            <Label extra={<span style={{ fontFamily: "var(--font-hand)", fontSize: "0.72rem", color: "var(--grey)" }}>needed for AI scoring</span>}>
+              Job Description (Optional)
+            </Label>
             <textarea
               rows={3}
-              placeholder="Paste job description requirements here..."
+              placeholder="Paste job description requirements here…"
               value={jdText}
               onChange={(e) => setJdText(e.target.value)}
-              className="glass-input no-icon resize-none text-sm"
+              className="cork-input no-icon"
+              style={{ resize: "none" }}
             />
           </div>
 
           {/* Tags */}
           <div>
-            <label className="block text-xs font-semibold text-[#2D2B2A] uppercase tracking-wider mb-1.5">
-              Tags & Labels
-            </label>
-            <div className="flex items-center gap-2 mb-2">
+            <Label>Tags & Labels</Label>
+            <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
               <input
                 type="text"
-                placeholder="Type tag & press Enter..."
+                placeholder="Type tag & press Enter…"
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddTag(tagInput); }}}
-                className="glass-input no-icon text-xs py-1.5 flex-1"
+                className="cork-input no-icon"
+                style={{ flex: 1, padding: "0.4rem 0.75rem", fontSize: "0.8rem" }}
               />
-              <button
-                type="button"
-                onClick={() => handleAddTag(tagInput)}
-                className="btn-secondary text-xs px-3 py-1.5 shrink-0"
-              >
+              <button type="button" onClick={() => handleAddTag(tagInput)} className="btn-cork-outline" style={{ fontSize: "0.75rem", padding: "0.4rem 0.75rem", flexShrink: 0 }}>
                 Add
               </button>
             </div>
 
-            {/* Quick-add suggested tags */}
-            <div className="flex flex-wrap gap-1.5 mb-2">
+            {/* Suggested tags */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", marginBottom: "0.5rem" }}>
               {SUGGESTED_TAGS.map((st) => (
                 <button
                   key={st}
                   type="button"
                   onClick={() => handleAddTag(st)}
-                  className="px-2 py-0.5 rounded-full bg-[#EAE6DF] border border-[#DCD8CF] text-[10px] text-[#6E6B6B] hover:text-[#2D2B2A] hover:border-[#9C8170] transition-colors"
+                  style={{ fontFamily: "var(--font-ui)", fontSize: "0.68rem", padding: "2px 8px", background: "var(--tape)", border: "1px solid rgba(31,28,23,0.15)", borderRadius: 1, color: "var(--ink)", cursor: "pointer" }}
                 >
                   + {st}
                 </button>
               ))}
             </div>
 
-            {/* Applied tag chips */}
+            {/* Applied tags */}
             {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem" }}>
                 {tags.map((t) => (
                   <span
                     key={t}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#EAE6DF] border border-[#DCD8CF] text-[#2D2B2A] text-xs font-medium"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", fontFamily: "var(--font-ui)", fontSize: "0.72rem", padding: "2px 8px", background: "var(--wall-2)", border: "1px solid rgba(31,28,23,0.18)", borderRadius: 1, color: "var(--ink)" }}
                   >
                     {t}
                     <button
                       type="button"
-                      onClick={() => setTags(tags.filter((item) => item !== t))}
-                      className="text-[#6E6B6B] hover:text-[#BA6856] ml-0.5 leading-none"
+                      onClick={() => setTags(tags.filter((x) => x !== t))}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--grey)", fontSize: "1rem", lineHeight: 1, padding: 0 }}
                     >
                       ×
                     </button>
@@ -261,15 +252,13 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
 
           {/* Personal Notes */}
           <div>
-            <label className="block text-xs font-semibold text-[#2D2B2A] uppercase tracking-wider mb-1.5">
-              Personal Notes
-            </label>
+            <Label>Personal Notes</Label>
             <input
               type="text"
-              placeholder="Referral contact, recruiter name, target salary..."
+              placeholder="Referral contact, recruiter name, target salary…"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="glass-input no-icon text-sm"
+              className="cork-input no-icon"
             />
           </div>
 
@@ -282,19 +271,11 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
           )}
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-secondary text-sm px-4 py-2.5"
-            >
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.6rem", paddingTop: "0.25rem", borderTop: "1px dashed rgba(31,28,23,0.12)" }}>
+            <button type="button" onClick={onClose} className="btn-cork-outline">
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="btn-primary text-sm px-6 py-2.5 disabled:opacity-60"
-            >
+            <button type="submit" disabled={submitting} className="btn-cork">
               {submitting ? "Saving…" : initialData ? "Update Application" : "Save Application"}
             </button>
           </div>

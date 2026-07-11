@@ -7,16 +7,16 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 // Lazy load pages for automatic route-level code splitting
-const AuthPage = lazy(() => import("./pages/AuthPage").then((m) => ({ default: m.AuthPage })));
-const DashboardPage = lazy(() => import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
-const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage })));
-const RemindersPage = lazy(() => import("./pages/RemindersPage").then((m) => ({ default: m.RemindersPage })));
+const AuthPage        = lazy(() => import("./pages/AuthPage").then((m)        => ({ default: m.AuthPage })));
+const DashboardPage   = lazy(() => import("./pages/DashboardPage").then((m)   => ({ default: m.DashboardPage })));
+const AnalyticsPage   = lazy(() => import("./pages/AnalyticsPage").then((m)   => ({ default: m.AnalyticsPage })));
+const RemindersPage   = lazy(() => import("./pages/RemindersPage").then((m)   => ({ default: m.RemindersPage })));
 const PublicProfilePage = lazy(() => import("./pages/PublicProfilePage").then((m) => ({ default: m.PublicProfilePage })));
-const ApplicationsPage = lazy(() => import("./pages/ApplicationsPage").then((m) => ({ default: m.ApplicationsPage })));
+const ApplicationsPage  = lazy(() => import("./pages/ApplicationsPage").then((m)  => ({ default: m.ApplicationsPage })));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
-    <div className="w-8 h-8 border-4 border-[#9C8170] border-t-transparent rounded-full animate-spin" />
+    <div className="cork-spinner" />
   </div>
 );
 
@@ -25,9 +25,10 @@ export function App() {
     <AuthProvider>
       <BrowserRouter>
         <ErrorBoundary>
-          <div className="min-h-screen bg-[#F7F6F3] text-[#2D2B2A] flex flex-col md:flex-row">
+          {/* Top-nav layout: navbar stacks on top, content fills below */}
+          <div className="min-h-screen flex flex-col" style={{ background: "var(--wall)" }}>
             <Navbar />
-            <main className="flex-1 min-w-0 flex flex-col">
+            <main className="flex-1 min-w-0">
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/auth" element={<AuthPage />} />
@@ -37,6 +38,14 @@ export function App() {
                     element={
                       <ProtectedRoute>
                         <DashboardPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/applications"
+                    element={
+                      <ProtectedRoute>
+                        <ApplicationsPage />
                       </ProtectedRoute>
                     }
                   />
@@ -53,14 +62,6 @@ export function App() {
                     element={
                       <ProtectedRoute>
                         <RemindersPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/applications"
-                    element={
-                      <ProtectedRoute>
-                        <ApplicationsPage />
                       </ProtectedRoute>
                     }
                   />

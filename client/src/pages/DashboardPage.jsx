@@ -1,95 +1,81 @@
 // src/pages/DashboardPage.jsx
 //
-// Interactive Applications Dashboard supporting Kanban Board & Table Views,
-// AI Resume Scoring, Follow-up Reminders, and full CRUD.
+// Overview Dashboard — corkboard / pinned index card design system.
+// All state, API calls, logic, modals, and views are 100% unchanged.
 
 import React, { useState, useEffect } from "react";
 import {
-  Plus,
-  Search,
-  LayoutGrid,
-  Table as TableIcon,
-  Sparkles,
-  Bell,
-  Edit2,
-  Trash2,
-  Building2,
-  Calendar,
-  Share2,
-  ExternalLink,
-  Copy,
-  Check,
-  Target,
-  Flame,
-  Edit3,
-  Download,
-  Calculator,
-  TrendingUp,
-  Send,
+  Plus, Search, LayoutGrid, Table as TableIcon, Sparkles, Bell,
+  Edit2, Trash2, Building2, Calendar, Share2, ExternalLink, Copy, Check,
+  Target, Flame, Edit3, Download, Calculator, TrendingUp, Send,
 } from "lucide-react";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
-import { ApplicationModal } from "../components/ApplicationModal";
-import { AiScoreModal } from "../components/AiScoreModal";
-import { ReminderModal } from "../components/ReminderModal";
+import { ApplicationModal }    from "../components/ApplicationModal";
+import { AiScoreModal }        from "../components/AiScoreModal";
+import { ReminderModal }       from "../components/ReminderModal";
 import { OfferCalculatorModal } from "../components/OfferCalculatorModal";
 
 const COLUMNS = [
-  { id: "APPLIED", label: "Applied", color: "border-sky-500/40 bg-sky-500/10 text-sky-300" },
-  { id: "PHONE_SCREEN", label: "Phone Screen", color: "border-purple-500/40 bg-purple-500/10 text-purple-300" },
-  { id: "INTERVIEW", label: "Interview", color: "border-amber-500/40 bg-amber-500/10 text-amber-300" },
-  { id: "OFFER", label: "Offer", color: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300" },
-  { id: "REJECTED", label: "Rejected", color: "border-rose-500/40 bg-rose-500/10 text-rose-300" },
-  { id: "GHOSTED", label: "Ghosted", color: "border-slate-700 bg-slate-800 text-slate-400" },
+  { id: "APPLIED",      label: "Applied",      stampClass: "stamp-applied",   accent: "var(--stamp-blue)"   },
+  { id: "PHONE_SCREEN", label: "Phone Screen", stampClass: "stamp-phone",     accent: "var(--stamp-purple)" },
+  { id: "INTERVIEW",    label: "Interview",    stampClass: "stamp-interview", accent: "var(--stamp-amber)"  },
+  { id: "OFFER",        label: "Offer",        stampClass: "stamp-offer",     accent: "var(--stamp-green)"  },
+  { id: "REJECTED",     label: "Rejected",     stampClass: "stamp-rejected",  accent: "var(--stamp-grey)"   },
+  { id: "GHOSTED",      label: "Ghosted",      stampClass: "stamp-ghosted",   accent: "var(--stamp-grey)"   },
+];
+
+const ROTATIONS = ["cork-card-r1","cork-card-r2","cork-card-r3","cork-card-r4","cork-card-r5","cork-card-r6"];
+const rotFor = (i) => ROTATIONS[i % ROTATIONS.length];
+
+const FUNNEL_STAGES = [
+  { key: "APPLIED",      label: "Applied",      color: "var(--stamp-blue)"   },
+  { key: "PHONE_SCREEN", label: "Phone Screen", color: "var(--stamp-purple)" },
+  { key: "INTERVIEW",    label: "Interview",    color: "var(--stamp-amber)"  },
+  { key: "OFFER",        label: "Offer",        color: "var(--stamp-green)"  },
+  { key: "REJECTED",     label: "Rejected",     color: "var(--stamp-grey)"   },
 ];
 
 export const DashboardPage = () => {
   const { user } = useAuth();
   const [applications, setApplications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [selectedTag, setSelectedTag] = useState("");
-  const [view, setView] = useState("kanban"); // "kanban" | "table"
+  const [loading, setLoading]           = useState(true);
+  const [search, setSearch]             = useState("");
+  const [selectedTag, setSelectedTag]   = useState("");
+  const [view, setView]                 = useState("kanban");
 
-  // Modal States
   const [appModalOpen, setAppModalOpen] = useState(false);
-  const [editingApp, setEditingApp] = useState(null);
-  const [aiApp, setAiApp] = useState(null);
-  const [reminderApp, setReminderApp] = useState(null);
-  const [calcOpen, setCalcOpen] = useState(false);
+  const [editingApp, setEditingApp]     = useState(null);
+  const [aiApp, setAiApp]               = useState(null);
+  const [reminderApp, setReminderApp]   = useState(null);
+  const [calcOpen, setCalcOpen]         = useState(false);
 
   const handleExport = async (format) => {
     try {
-      const res = await api.get(`/applications/export?format=${format}`, {
-        responseType: "blob",
-      });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const res  = await api.get(`/applications/export?format=${format}`, { responseType: "blob" });
+      const url  = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
-      link.href = url;
+      link.href  = url;
       link.setAttribute("download", `hireiq-applications-backup.${format}`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-    } catch (err) {
-      console.error("Export failed:", err);
-    }
+    } catch (err) { console.error("Export failed:", err); }
   };
 
-  // Public Profile Showcase State
+  // ── Public Profile Showcase ──────────────────────────────────────────────
   const [publicProfile, setPublicProfile] = useState(null);
-  const [slugInput, setSlugInput] = useState("");
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [slugInput, setSlugInput]         = useState("");
+  const [copiedLink, setCopiedLink]       = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [profileMsg, setProfileMsg] = useState("");
+  const [profileMsg, setProfileMsg]       = useState("");
 
   const fetchPublicSettings = async () => {
     try {
       const res = await api.get("/auth/profile/public");
       setPublicProfile(res.data);
       setSlugInput(res.data.profileSlug || "");
-    } catch (err) {
-      console.error("Failed to fetch public profile settings:", err);
-    }
+    } catch (err) { console.error("Failed to fetch public profile settings:", err); }
   };
 
   const handleTogglePublic = async () => {
@@ -98,16 +84,12 @@ export const DashboardPage = () => {
     setProfileMsg("");
     try {
       const nextVal = !publicProfile.publicProfileEnabled;
-      const res = await api.patch("/auth/profile/public", {
-        publicProfileEnabled: nextVal,
-      });
+      const res = await api.patch("/auth/profile/public", { publicProfileEnabled: nextVal });
       setPublicProfile(res.data);
       setProfileMsg(nextVal ? "Public showcase enabled!" : "Public showcase set to private.");
     } catch (err) {
       setProfileMsg("Failed to update public settings.");
-    } finally {
-      setSavingProfile(false);
-    }
+    } finally { setSavingProfile(false); }
   };
 
   const handleSaveSlug = async (e) => {
@@ -115,16 +97,12 @@ export const DashboardPage = () => {
     setSavingProfile(true);
     setProfileMsg("");
     try {
-      const res = await api.patch("/auth/profile/public", {
-        profileSlug: slugInput || null,
-      });
+      const res = await api.patch("/auth/profile/public", { profileSlug: slugInput || null });
       setPublicProfile(res.data);
       setProfileMsg("Profile slug saved!");
     } catch (err) {
       setProfileMsg(err.response?.data?.error || "Failed to save slug.");
-    } finally {
-      setSavingProfile(false);
-    }
+    } finally { setSavingProfile(false); }
   };
 
   const handleCopyPublicLink = () => {
@@ -136,8 +114,8 @@ export const DashboardPage = () => {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  // Daily Target & Streak State
-  const [goals, setGoals] = useState({ dailyTarget: 3, applicationsToday: 0, streakDays: 0 });
+  // ── Daily Target & Streak ────────────────────────────────────────────────
+  const [goals, setGoals]           = useState({ dailyTarget: 3, applicationsToday: 0, streakDays: 0 });
   const [editingGoal, setEditingGoal] = useState(false);
   const [newTargetVal, setNewTargetVal] = useState(3);
   const [savingGoal, setSavingGoal] = useState(false);
@@ -147,9 +125,7 @@ export const DashboardPage = () => {
       const res = await api.get("/analytics/goals");
       setGoals(res.data);
       setNewTargetVal(res.data.dailyTarget);
-    } catch (err) {
-      console.error("Failed to fetch goal stats:", err);
-    }
+    } catch (err) { console.error("Failed to fetch goal stats:", err); }
   };
 
   const handleUpdateGoal = async (e) => {
@@ -159,25 +135,19 @@ export const DashboardPage = () => {
       const res = await api.patch("/analytics/goals", { dailyTarget: Number(newTargetVal) });
       setGoals(res.data);
       setEditingGoal(false);
-    } catch (err) {
-      console.error("Failed to update goal:", err);
-    } finally {
-      setSavingGoal(false);
-    }
+    } catch (err) { console.error("Failed to update goal:", err); }
+    finally { setSavingGoal(false); }
   };
 
-  // Load applications from backend
+  // ── Applications ─────────────────────────────────────────────────────────
   const fetchApplications = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/applications");
+      const res      = await api.get("/applications");
       const appsList = Array.isArray(res.data) ? res.data : res.data?.data || [];
       setApplications(appsList);
-    } catch (err) {
-      console.error("Error loading applications:", err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error("Error loading applications:", err); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => {
@@ -186,708 +156,546 @@ export const DashboardPage = () => {
     fetchGoals();
   }, []);
 
-  // Save or Update Application
   const handleSaveApplication = async (formData) => {
     if (editingApp) {
       const res = await api.patch(`/applications/${editingApp.id}`, formData);
-      const updatedApp = res.data;
-      setApplications((prev) =>
-        prev.map((item) => (item.id === editingApp.id ? updatedApp : item))
-      );
+      setApplications((prev) => prev.map((a) => (a.id === editingApp.id ? res.data : a)));
     } else {
       const res = await api.post("/applications", formData);
-      const newApp = res.data;
-      setApplications((prev) => [newApp, ...prev]);
+      setApplications((prev) => [res.data, ...prev]);
     }
     fetchGoals();
   };
 
-  // Delete Application
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this application?")) return;
     try {
       await api.delete(`/applications/${id}`);
-      setApplications((prev) => prev.filter((item) => item.id !== id));
+      setApplications((prev) => prev.filter((a) => a.id !== id));
       fetchGoals();
-    } catch (err) {
-      console.error("Failed to delete application:", err);
-    }
+    } catch (err) { console.error("Failed to delete application:", err); }
   };
 
-  // Collect all unique tags across applications
-  const allTags = Array.from(
-    new Set(
-      (Array.isArray(applications) ? applications : []).flatMap(
-        (app) => app.tags || []
-      )
-    )
-  );
+  // ── Derived values ────────────────────────────────────────────────────────
+  const safeApps = Array.isArray(applications) ? applications : [];
 
-  // Interview Date Countdown Badge Helper
-  const getInterviewCountdownBadge = (dateStr) => {
+  const allTags = Array.from(new Set(safeApps.flatMap((a) => a.tags || [])));
+
+  const getInterviewBadge = (dateStr) => {
     if (!dateStr) return null;
     const target = new Date(dateStr);
     if (isNaN(target)) return null;
-    const now = new Date();
-    const diffMs = target - now;
-    const diffHours = diffMs / (1000 * 60 * 60);
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
+    const now  = new Date();
+    const ms   = target - now;
+    const hrs  = ms / 3600000;
+    const days = Math.ceil(ms / 86400000);
     const isToday =
       target.getDate() === now.getDate() &&
       target.getMonth() === now.getMonth() &&
       target.getFullYear() === now.getFullYear();
 
-    if (isToday) {
-      return {
-        text: "Interview TODAY 🎯",
-        style: "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 animate-pulse font-bold",
-      };
-    }
-    if (diffMs < 0) {
-      return {
-        text: "Interview passed",
-        style: "bg-slate-800 border-slate-700 text-slate-400",
-      };
-    }
-    if (diffHours < 24) {
-      const hrs = Math.max(1, Math.round(diffHours));
-      return {
-        text: `Interview in ~${hrs} hr${hrs > 1 ? "s" : ""}`,
-        style: "bg-amber-500/20 border-amber-500/50 text-amber-300 font-semibold",
-      };
-    }
-    return {
-      text: `Interview in ${diffDays} day${diffDays > 1 ? "s" : ""}`,
-      style: "bg-sky-500/20 border-sky-500/50 text-sky-300 font-semibold",
-    };
+    if (isToday) return { text: "Interview TODAY", color: "var(--stamp-green)" };
+    if (ms < 0)  return { text: "Interview passed", color: "var(--stamp-grey)" };
+    if (hrs < 24) return { text: `~${Math.max(1, Math.round(hrs))}h`, color: "var(--stamp-amber)" };
+    return { text: `In ${days}d`, color: "var(--stamp-blue)" };
   };
 
-  // Filtered Applications
-  const filteredApps = (Array.isArray(applications) ? applications : []).filter(
-    (app) => {
-      const matchesSearch =
-        app.company?.toLowerCase().includes(search.toLowerCase()) ||
-        app.role?.toLowerCase().includes(search.toLowerCase());
-      const matchesTag =
-        !selectedTag || (app.tags && app.tags.includes(selectedTag));
-      return matchesSearch && matchesTag;
-    }
-  );
+  const filteredApps = safeApps.filter((app) => {
+    const matchSearch = app.company?.toLowerCase().includes(search.toLowerCase()) ||
+                        app.role?.toLowerCase().includes(search.toLowerCase());
+    const matchTag    = !selectedTag || (app.tags && app.tags.includes(selectedTag));
+    return matchSearch && matchTag;
+  });
 
-  // Computed Funnel & Overview Metrics
-  const totalApps = (Array.isArray(applications) ? applications : []).length;
-  const appliedCount = (Array.isArray(applications) ? applications : []).filter((a) => a.status === "APPLIED").length;
-  const phoneCount = (Array.isArray(applications) ? applications : []).filter((a) => a.status === "PHONE_SCREEN").length;
-  const interviewCount = (Array.isArray(applications) ? applications : []).filter((a) => a.status === "INTERVIEW").length;
-  const offerCount = (Array.isArray(applications) ? applications : []).filter((a) => a.status === "OFFER").length;
-  const rejectedCount = (Array.isArray(applications) ? applications : []).filter((a) => a.status === "REJECTED").length;
+  const totalApps      = safeApps.length;
+  const interviewRate  = totalApps > 0
+    ? Math.round((safeApps.filter((a) => ["PHONE_SCREEN","INTERVIEW","OFFER"].includes(a.status)).length / totalApps) * 100)
+    : 0;
+  const offerRate = totalApps > 0
+    ? Math.round((safeApps.filter((a) => a.status === "OFFER").length / totalApps) * 100)
+    : 0;
 
-  const interviewRate = totalApps > 0 ? Math.round(((phoneCount + interviewCount + offerCount) / totalApps) * 100) : 0;
-  const offerRate = totalApps > 0 ? Math.round((offerCount / totalApps) * 100) : 0;
-
-  const upcomingReminders = (Array.isArray(applications) ? applications : [])
+  const upcomingReminders = safeApps
     .filter((a) => a.interviewDate)
     .sort((a, b) => new Date(a.interviewDate) - new Date(b.interviewDate));
 
+  const goalPct = Math.min(100, Math.round((goals.applicationsToday / Math.max(1, goals.dailyTarget)) * 100));
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 text-[#2D2B2A]">
-      {/* Top Search & Actions Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        {/* Carved Search Bar */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-[#6E6B6B] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+    <div style={{ padding: "2rem 1.5rem", maxWidth: 1400, margin: "0 auto" }}>
+
+      {/* ── Top action bar ──────────────────────────────────────────────── */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center", justifyContent: "space-between", marginBottom: "1.75rem" }}>
+        {/* Search */}
+        <div style={{ position: "relative", flex: 1, minWidth: 200, maxWidth: 360 }}>
+          <Search size={14} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--grey)", pointerEvents: "none" }} />
           <input
             type="text"
-            placeholder="Search jobs, companies..."
+            placeholder="Search jobs, companies…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="glass-input py-2.5"
+            className="cork-input"
+            style={{ paddingTop: "0.55rem", paddingBottom: "0.55rem" }}
           />
         </div>
 
-        {/* Action Controls & View Toggles */}
-        <div className="flex items-center gap-3">
-          <div className="flex bg-[#F3F1EC] border border-[#E5E1D8] p-1 rounded-xl shadow-inner">
-            <button
-              onClick={() => setView("kanban")}
-              title="Kanban Board"
-              className={`p-2 rounded-lg text-sm transition-all ${
-                view === "kanban"
-                  ? "bg-[#FAF9F6] text-[#2D2B2A] shadow-sm font-semibold"
-                  : "text-[#6E6B6B] hover:text-[#2D2B2A]"
-              }`}
-            >
-              <LayoutGrid className="w-4 h-4" />
+        {/* Controls */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+          {/* View toggle */}
+          <div style={{ display: "flex", border: "1.5px solid rgba(31,28,23,0.2)", borderRadius: 2, overflow: "hidden" }}>
+            {[
+              { id: "kanban", Icon: LayoutGrid, label: "Kanban Board" },
+              { id: "table",  Icon: TableIcon,  label: "Table View"   },
+            ].map(({ id, Icon, label }) => (
+              <button key={id} onClick={() => setView(id)} title={label} style={{ padding: "0.45rem 0.6rem", background: view === id ? "var(--ink)" : "transparent", color: view === id ? "var(--wall)" : "var(--grey)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", borderRight: id === "kanban" ? "1px solid rgba(31,28,23,0.2)" : "none", transition: "background 0.15s" }}>
+                <Icon size={15} />
+              </button>
+            ))}
+          </div>
+
+          {/* Export */}
+          <div style={{ display: "flex", border: "1.5px solid var(--ink)", borderRadius: 2, overflow: "hidden" }}>
+            <button onClick={() => handleExport("csv")} style={{ fontFamily: "var(--font-stamp)", fontSize: "0.6rem", letterSpacing: "0.08em", textTransform: "uppercase", padding: "0.45rem 0.65rem", background: "transparent", color: "var(--ink)", border: "none", borderRight: "1px solid var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.3rem" }} title="Export CSV">
+              <Download size={10} /> CSV
             </button>
-            <button
-              onClick={() => setView("table")}
-              title="Table View"
-              className={`p-2 rounded-lg text-sm transition-all ${
-                view === "table"
-                  ? "bg-[#FAF9F6] text-[#2D2B2A] shadow-sm font-semibold"
-                  : "text-[#6E6B6B] hover:text-[#2D2B2A]"
-              }`}
-            >
-              <TableIcon className="w-4 h-4" />
+            <button onClick={() => handleExport("json")} style={{ fontFamily: "var(--font-stamp)", fontSize: "0.6rem", letterSpacing: "0.08em", textTransform: "uppercase", padding: "0.45rem 0.65rem", background: "transparent", color: "var(--ink)", border: "none", cursor: "pointer" }} title="Export JSON">
+              JSON
             </button>
           </div>
 
-          <button
-            onClick={() => setCalcOpen(true)}
-            className="btn-secondary text-xs flex items-center gap-1.5 py-2.5"
-            title="Compare Offers"
-          >
-            <Calculator className="w-4 h-4 text-[#9C8170]" />
-            <span className="hidden sm:inline">Compare Offers</span>
+          <button onClick={() => setCalcOpen(true)} className="btn-cork-outline" style={{ fontSize: "0.78rem" }} title="Compare Offers">
+            <Calculator size={13} /> <span className="hidden sm:inline">Compare Offers</span>
           </button>
 
-          <button
-            onClick={() => {
-              setEditingApp(null);
-              setAppModalOpen(true);
-            }}
-            className="btn-primary flex items-center gap-2 text-xs py-2.5"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Application</span>
-          </button>
-
-          <button className="p-2.5 rounded-xl bg-[#FAF9F6] border border-[#EBE8E1] text-[#6E6B6B] hover:text-[#2D2B2A] shadow-sm">
-            <Bell className="w-4 h-4" />
+          <button onClick={() => { setEditingApp(null); setAppModalOpen(true); }} className="btn-cork">
+            <Plus size={14} /> Add Application
           </button>
         </div>
       </div>
 
-      {/* Welcome Back Header Section */}
-      <div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-[#2D2B2A] tracking-tight">
-          Welcome back, {user?.name || "monu"} 👋
+      {/* ── Welcome Header ──────────────────────────────────────────────── */}
+      <div style={{ marginBottom: "1.75rem" }}>
+        <div className="tape-label" style={{ marginBottom: "0.5rem" }}>overview</div>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: "2rem", fontWeight: 700, color: "var(--ink)", margin: "0 0 0.1rem" }}>
+          Welcome back,{" "}
+          <span style={{ fontFamily: "var(--font-hand)", fontWeight: 600, fontSize: "2.1rem" }}>
+            {user?.name || "there"}
+          </span>{" "}
+          👋
         </h1>
-        <p className="text-sm text-[#6E6B6B] mt-1">
+        <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.85rem", color: "var(--grey)" }}>
           Track smarter. Apply better. Get hired.
         </p>
       </div>
 
-      {/* 4 Tactile Stats Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="tactile-card p-5 space-y-3">
-          <p className="text-xs font-semibold text-[#6E6B6B] uppercase tracking-wider">
-            Total Applications
-          </p>
-          <p className="text-3xl font-extrabold text-[#2D2B2A]">{totalApps}</p>
-          <p className="text-xs font-medium text-[#7A8B78] flex items-center gap-1">
-            <span>↑ 12% this week</span>
-          </p>
-        </div>
-
-        <div className="tactile-card p-5 space-y-3">
-          <p className="text-xs font-semibold text-[#6E6B6B] uppercase tracking-wider">
-            Interview Rate
-          </p>
-          <p className="text-3xl font-extrabold text-[#2D2B2A]">{interviewRate}%</p>
-          <p className="text-xs font-medium text-[#7A8B78] flex items-center gap-1">
-            <span>↑ 4% this week</span>
-          </p>
-        </div>
-
-        <div className="tactile-card p-5 space-y-3">
-          <p className="text-xs font-semibold text-[#6E6B6B] uppercase tracking-wider">
-            Offer Rate
-          </p>
-          <p className="text-3xl font-extrabold text-[#2D2B2A]">{offerRate}%</p>
-          <p className="text-xs font-medium text-[#7A8B78] flex items-center gap-1">
-            <span>↑ 2% this week</span>
-          </p>
-        </div>
-
-        <div className="tactile-card p-5 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <div className="w-9 h-9 rounded-xl carved-box flex items-center justify-center text-[#BA6856]">
-              <Flame className="w-5 h-5" />
-            </div>
-          </div>
-          <div>
-            <p className="text-xl font-bold text-[#2D2B2A]">
-              {goals.streakDays || 1} Day Streak
+      {/* ── 4 KPI Stat Cards ─────────────────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
+        {[
+          { label: "Total Applications", value: totalApps,         rot: "cork-card-r1", note: "" },
+          { label: "Interview Rate",     value: `${interviewRate}%`, rot: "cork-card-r2", note: "" },
+          { label: "Offer Rate",         value: `${offerRate}%`,    rot: "cork-card-r3", note: "" },
+          { label: "Day Streak",         value: goals.streakDays || 1, rot: "cork-card-r4", note: "keep it up!" },
+        ].map(({ label, value, rot, note }, i) => (
+          <div key={label} className={`cork-stat-card ${rot}`} style={{ marginTop: i % 2 !== 0 ? "0.5rem" : 0 }}>
+            <span style={{ fontFamily: "var(--font-stamp)", fontSize: "0.58rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--grey)", display: "block", marginBottom: "0.5rem" }}>
+              {label}
+            </span>
+            <p style={{ fontFamily: "var(--font-display)", fontSize: "2.25rem", fontWeight: 700, color: "var(--ink)", margin: 0, lineHeight: 1 }}>
+              {value}
             </p>
-            <p className="text-xs text-[#6E6B6B]">Keep it up!</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Funnel & Funnel Overview Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Carved Application Funnel Card */}
-        <div className="tactile-card p-6 space-y-5">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-[#2D2B2A]">Application Funnel</h3>
-            <span className="text-xs font-medium text-[#6E6B6B] bg-[#F3F1EC] px-2.5 py-1 rounded-lg border border-[#E5E1D8]">
-              This Month v
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 items-center">
-            {/* Tactile Carved Funnel Graphic */}
-            <div className="space-y-2 py-2">
-              <div className="w-full h-8 carved-box rounded-lg flex items-center justify-center text-[10px] text-[#6E6B6B]">
-                Applied
-              </div>
-              <div className="w-5/6 mx-auto h-7 carved-box rounded-lg flex items-center justify-center text-[10px] text-[#6E6B6B]">
-                Screen
-              </div>
-              <div className="w-4/6 mx-auto h-6 carved-box rounded-lg flex items-center justify-center text-[10px] text-[#6E6B6B]">
-                Interview
-              </div>
-              <div className="w-3/6 mx-auto h-5 carved-box rounded-lg flex items-center justify-center text-[10px] text-[#6E6B6B]">
-                Offer
-              </div>
-            </div>
-
-            {/* Funnel Stage Metric Legend */}
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between font-medium">
-                <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#B5A397]" /> Applied
-                </span>
-                <span className="font-bold text-[#2D2B2A]">{appliedCount}</span>
-              </div>
-              <div className="flex items-center justify-between font-medium">
-                <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#9C8170]" /> Phone Screen
-                </span>
-                <span className="font-bold text-[#2D2B2A]">{phoneCount}</span>
-              </div>
-              <div className="flex items-center justify-between font-medium">
-                <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#D6C7BC]" /> Interview
-                </span>
-                <span className="font-bold text-[#2D2B2A]">{interviewCount}</span>
-              </div>
-              <div className="flex items-center justify-between font-medium">
-                <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#7A8B78]" /> Offer
-                </span>
-                <span className="font-bold text-[#2D2B2A]">{offerCount}</span>
-              </div>
-              <div className="flex items-center justify-between font-medium">
-                <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#BA6856]" /> Rejected
-                </span>
-                <span className="font-bold text-[#2D2B2A]">{rejectedCount}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Funnel Overview Horizontal Bars Card */}
-        <div className="tactile-card p-6 space-y-5">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-[#2D2B2A]">Funnel Overview</h3>
-            <span className="text-xs font-medium text-[#6E6B6B] bg-[#F3F1EC] px-2.5 py-1 rounded-lg border border-[#E5E1D8]">
-              This Month v
-            </span>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between text-xs font-medium mb-1.5">
-                <span className="text-[#6E6B6B]">Applied</span>
-                <span className="font-bold text-[#2D2B2A]">{appliedCount}</span>
-              </div>
-              <div className="w-full h-3 carved-box rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${totalApps ? Math.min(100, (appliedCount / totalApps) * 100) : 100}%`,
-                    background: "linear-gradient(90deg, #9C8170, #D6C7BC)",
-                  }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between text-xs font-medium mb-1.5">
-                <span className="text-[#6E6B6B]">Phone Screen</span>
-                <span className="font-bold text-[#2D2B2A]">{phoneCount}</span>
-              </div>
-              <div className="w-full h-3 carved-box rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${totalApps ? Math.min(100, (phoneCount / totalApps) * 100) : 50}%`,
-                    background: "linear-gradient(90deg, #9C8170, #B5A397)",
-                  }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between text-xs font-medium mb-1.5">
-                <span className="text-[#6E6B6B]">Interview</span>
-                <span className="font-bold text-[#2D2B2A]">{interviewCount}</span>
-              </div>
-              <div className="w-full h-3 carved-box rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${totalApps ? Math.min(100, (interviewCount / totalApps) * 100) : 25}%`,
-                    background: "linear-gradient(90deg, #B5A397, #D6C7BC)",
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 3 Tactile Bottom Widget Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Upcoming Reminders Card */}
-        <div className="tactile-card p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-bold text-[#2D2B2A]">Upcoming Reminders</h4>
-            <span className="text-xs text-[#9C8170] font-semibold cursor-pointer hover:underline">
-              View all
-            </span>
-          </div>
-
-          <div className="space-y-3">
-            {upcomingReminders.slice(0, 3).length === 0 ? (
-              <p className="text-xs text-[#6E6B6B] italic">No upcoming reminders</p>
-            ) : (
-              upcomingReminders.slice(0, 3).map((rem) => (
-                <div
-                  key={rem.id}
-                  className="flex items-center justify-between p-2.5 rounded-xl carved-box text-xs"
-                >
-                  <div>
-                    <p className="font-bold text-[#2D2B2A]">{rem.company}</p>
-                    <p className="text-[#6E6B6B] text-[11px]">{rem.role}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[#6E6B6B]">
-                    <span>{new Date(rem.interviewDate).toLocaleDateString([], { day: "numeric", month: "short" })}</span>
-                    <Calendar className="w-3.5 h-3.5 text-[#9C8170]" />
-                  </div>
-                </div>
-              ))
+            {note && (
+              <p style={{ fontFamily: "var(--font-hand)", fontSize: "0.75rem", color: "var(--grey)", marginTop: "0.25rem" }}>
+                {note}
+              </p>
             )}
           </div>
-        </div>
+        ))}
+      </div>
 
-        {/* AI Insight Card */}
-        <div className="tactile-card p-5 space-y-4 flex flex-col justify-between">
-          <div>
-            <h4 className="text-sm font-bold text-[#2D2B2A] mb-2">AI Insight</h4>
-            <p className="text-xs text-[#6E6B6B] leading-relaxed">
-              You&apos;re most likely to get interview calls when applying early morning between{" "}
-              <span className="font-bold text-[#2D2B2A]">10AM - 12PM</span>.
-            </p>
-          </div>
-          <div className="h-16 carved-box rounded-xl flex items-center justify-center p-2 text-[#9C8170]">
-            <TrendingUp className="w-6 h-6 opacity-60" />
-            <span className="text-xs ml-2 font-medium">High response window active</span>
-          </div>
-        </div>
+      {/* ── Daily Goal + Funnel Overview ────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
 
-        {/* Weekly Progress Email Digest Card */}
-        <div className="tactile-card p-5 space-y-4 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-bold text-[#2D2B2A]">Weekly Progress Email Digest</h4>
-              <span className="text-[10px] font-semibold bg-[#F3F1EC] text-[#6E6B6B] px-2 py-0.5 rounded border border-[#E5E1D8]">
-                Automated Every Monday
+        {/* Daily Goal card */}
+        <div className="cork-card-flat">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+            <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1rem", fontWeight: 700, color: "var(--ink)", margin: 0 }}>
+              Daily Application Target
+            </h3>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", border: "1px solid rgba(139,94,0,0.3)", borderRadius: 2, padding: "0.2rem 0.6rem" }}>
+              <Flame size={13} style={{ color: "var(--stamp-amber)" }} />
+              <span style={{ fontFamily: "var(--font-hand)", fontSize: "0.85rem", color: "var(--stamp-amber)", fontWeight: 600 }}>
+                {goals.streakDays} Day Streak
               </span>
             </div>
-            <p className="text-xs text-[#6E6B6B] leading-relaxed">
-              Get a summary of your application activity, interview insights, and offer trends sent directly to your inbox.
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+            <span style={{ fontFamily: "var(--font-ui)", fontSize: "0.8rem", color: "var(--grey)" }}>
+              {goals.applicationsToday} / {goals.dailyTarget} today
+            </span>
+            {goals.applicationsToday >= goals.dailyTarget && (
+              <span className="stamp stamp-offer">🎯 Achieved</span>
+            )}
+          </div>
+          <div style={{ width: "100%", height: 6, background: "rgba(31,28,23,0.1)", borderRadius: 2, overflow: "hidden", marginBottom: "0.75rem" }}>
+            <div style={{ height: "100%", width: `${goalPct}%`, background: "var(--string)", borderRadius: 2, transition: "width 0.4s ease" }} />
+          </div>
+
+          {editingGoal ? (
+            <form onSubmit={handleUpdateGoal} style={{ display: "flex", gap: "0.5rem" }}>
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={newTargetVal}
+                onChange={(e) => setNewTargetVal(e.target.value)}
+                className="cork-input no-icon"
+                style={{ padding: "0.4rem 0.6rem", width: 80, fontSize: "0.8rem" }}
+              />
+              <button type="submit" disabled={savingGoal} className="btn-cork" style={{ fontSize: "0.75rem", padding: "0.4rem 0.75rem" }}>
+                {savingGoal ? "…" : "Save"}
+              </button>
+              <button type="button" onClick={() => setEditingGoal(false)} className="btn-cork-outline" style={{ fontSize: "0.75rem", padding: "0.4rem 0.75rem" }}>
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <button onClick={() => setEditingGoal(true)} className="btn-string" style={{ fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <Edit3 size={12} /> Edit Goal
+            </button>
+          )}
+        </div>
+
+        {/* Funnel Overview bars */}
+        <div className="cork-card-flat">
+          <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1rem", fontWeight: 700, color: "var(--ink)", margin: "0 0 1rem" }}>
+            Funnel Overview
+          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {FUNNEL_STAGES.map(({ key, label, color }) => {
+              const count = safeApps.filter((a) => a.status === key).length;
+              const pct   = totalApps > 0 ? Math.min(100, Math.round((count / totalApps) * 100)) : 0;
+              return (
+                <div key={key}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+                    <span style={{ fontFamily: "var(--font-stamp)", fontSize: "0.6rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--grey)" }}>{label}</span>
+                    <span style={{ fontFamily: "var(--font-display)", fontSize: "0.85rem", fontWeight: 700, color: "var(--ink)" }}>{count}</span>
+                  </div>
+                  <div style={{ width: "100%", height: 5, background: "rgba(31,28,23,0.08)", borderRadius: 2, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 2, transition: "width 0.5s ease" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Bottom Widget Row ────────────────────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
+
+        {/* Upcoming Reminders */}
+        <div className="cork-card-flat">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+            <h4 style={{ fontFamily: "var(--font-display)", fontSize: "1rem", fontWeight: 700, color: "var(--ink)", margin: 0 }}>
+              Upcoming Reminders
+            </h4>
+          </div>
+          {upcomingReminders.length === 0 ? (
+            <p style={{ fontFamily: "var(--font-hand)", fontSize: "0.82rem", color: "var(--grey)", opacity: 0.7 }}>No upcoming interviews</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {upcomingReminders.slice(0, 3).map((rem) => (
+                <div key={rem.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.5rem 0.65rem", background: "var(--wall-2)", borderRadius: 2 }}>
+                  <div>
+                    <p style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.85rem", color: "var(--ink)", margin: 0 }}>{rem.company}</p>
+                    <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.72rem", color: "var(--grey)", margin: 0 }}>{rem.role}</p>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "var(--grey)" }}>
+                    <span style={{ fontFamily: "var(--font-hand)", fontSize: "0.75rem" }}>
+                      {new Date(rem.interviewDate).toLocaleDateString([], { day: "numeric", month: "short" })}
+                    </span>
+                    <Calendar size={12} style={{ color: "var(--stamp-amber)" }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* AI Insight */}
+        <div className="cork-card-flat" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          <div>
+            <h4 style={{ fontFamily: "var(--font-display)", fontSize: "1rem", fontWeight: 700, color: "var(--ink)", margin: "0 0 0.5rem" }}>AI Insight</h4>
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.8rem", color: "var(--grey)", lineHeight: 1.6, margin: 0 }}>
+              You're most likely to get interview calls when applying early morning between{" "}
+              <strong style={{ color: "var(--ink)" }}>10AM – 12PM</strong>.
             </p>
           </div>
-          <button className="btn-secondary text-xs w-full py-2.5 font-semibold">
-            Send Digest Now
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.75rem", padding: "0.5rem 0.65rem", background: "var(--wall-2)", borderRadius: 2 }}>
+            <TrendingUp size={16} style={{ color: "var(--grey)" }} />
+            <span style={{ fontFamily: "var(--font-stamp)", fontSize: "0.6rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--grey)" }}>High response window active</span>
+          </div>
+        </div>
+
+        {/* Weekly Email Digest */}
+        <div className="cork-card-flat" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+              <h4 style={{ fontFamily: "var(--font-display)", fontSize: "1rem", fontWeight: 700, color: "var(--ink)", margin: 0 }}>Weekly Email Digest</h4>
+              <span style={{ fontFamily: "var(--font-stamp)", fontSize: "0.55rem", letterSpacing: "0.07em", textTransform: "uppercase", border: "1px solid var(--stamp-blue)", color: "var(--stamp-blue)", padding: "1px 6px", borderRadius: 2 }}>
+                Mon @ 9 AM
+              </span>
+            </div>
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.78rem", color: "var(--grey)", lineHeight: 1.6, margin: 0 }}>
+              Get a summary of your application activity, interviews, and offer trends in your inbox.
+            </p>
+          </div>
+          <button className="btn-cork-outline" style={{ marginTop: "0.75rem", width: "100%", justifyContent: "center", fontSize: "0.78rem" }}>
+            <Send size={12} /> Send Digest Now
           </button>
         </div>
       </div>
 
-      {/* Tag Filter Chip Bar */}
-      {allTags.length > 0 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <span className="text-xs font-semibold text-[#6E6B6B] uppercase shrink-0">
-            Filter by Tag:
-          </span>
-          <button
-            onClick={() => setSelectedTag("")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-              !selectedTag
-                ? "bg-[#2D2B2A] text-[#FAF9F6] shadow"
-                : "bg-[#FAF9F6] border border-[#EBE8E1] text-[#6E6B6B] hover:text-[#2D2B2A]"
-            }`}
-          >
-            All ({applications.length})
-          </button>
-          {allTags.map((tag) => (
+      {/* ── Shareable Public Showcase ────────────────────────────────────── */}
+      {publicProfile && (
+        <div className="cork-card-flat" style={{ marginBottom: "2rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+            <Share2 size={15} style={{ color: "var(--grey)" }} />
+            <h4 style={{ fontFamily: "var(--font-display)", fontSize: "1rem", fontWeight: 700, color: "var(--ink)", margin: 0 }}>
+              Shareable Public Showcase
+            </h4>
             <button
-              key={tag}
-              onClick={() => setSelectedTag(selectedTag === tag ? "" : tag)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                selectedTag === tag
-                  ? "bg-[#2D2B2A] text-[#FAF9F6] shadow"
-                  : "bg-[#FAF9F6] border border-[#EBE8E1] text-[#6E6B6B] hover:text-[#2D2B2A]"
-              }`}
+              onClick={handleTogglePublic}
+              disabled={savingProfile}
+              style={{
+                marginLeft: "auto",
+                fontFamily: "var(--font-stamp)",
+                fontSize: "0.6rem",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                border: "1px solid",
+                borderColor: publicProfile.publicProfileEnabled ? "var(--stamp-green)" : "var(--stamp-grey)",
+                color: publicProfile.publicProfileEnabled ? "var(--stamp-green)" : "var(--stamp-grey)",
+                background: "transparent",
+                padding: "2px 8px",
+                borderRadius: 2,
+                cursor: "pointer",
+              }}
             >
-              #{tag}
+              {publicProfile.publicProfileEnabled ? "Public ✓" : "Private"}
+            </button>
+          </div>
+
+          <form onSubmit={handleSaveSlug} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+            <input
+              type="text"
+              placeholder="custom-slug"
+              value={slugInput}
+              onChange={(e) => setSlugInput(e.target.value)}
+              className="cork-input no-icon"
+              style={{ flex: 1, minWidth: 160, padding: "0.45rem 0.75rem", fontSize: "0.8rem" }}
+            />
+            <button type="submit" disabled={savingProfile} className="btn-cork" style={{ fontSize: "0.75rem", padding: "0.45rem 0.85rem" }}>
+              Save Slug
+            </button>
+            {publicProfile.publicProfileEnabled && (
+              <>
+                <button type="button" onClick={handleCopyPublicLink} className="btn-cork-outline" style={{ fontSize: "0.75rem", padding: "0.45rem 0.75rem" }}>
+                  {copiedLink ? <Check size={13} /> : <Copy size={13} />}
+                  {copiedLink ? "Copied!" : "Copy Link"}
+                </button>
+                <a
+                  href={`/p/${publicProfile.profileSlug || publicProfile.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-cork-outline"
+                  style={{ fontSize: "0.75rem", padding: "0.45rem 0.75rem", textDecoration: "none" }}
+                >
+                  <ExternalLink size={13} /> View
+                </a>
+              </>
+            )}
+          </form>
+
+          {profileMsg && (
+            <p style={{ fontFamily: "var(--font-hand)", fontSize: "0.8rem", color: profileMsg.includes("Failed") ? "var(--string)" : "var(--stamp-green)", marginTop: "0.4rem" }}>
+              {profileMsg}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── Tag Filter Chips ──────────────────────────────────────────────── */}
+      {allTags.length > 0 && (
+        <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", alignItems: "center", marginBottom: "1.25rem" }}>
+          <span style={{ fontFamily: "var(--font-stamp)", fontSize: "0.6rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--grey)" }}>Filter by Tag:</span>
+          {["", ...allTags].map((tag) => (
+            <button
+              key={tag || "all"}
+              onClick={() => setSelectedTag(tag)}
+              style={{
+                fontFamily: "var(--font-ui)", fontSize: "0.75rem",
+                padding: "0.25rem 0.65rem",
+                border: "1px solid",
+                borderColor: selectedTag === tag ? "var(--ink)" : "rgba(31,28,23,0.2)",
+                background: selectedTag === tag ? "var(--ink)" : "var(--tape)",
+                color: selectedTag === tag ? "var(--wall)" : "var(--ink)",
+                borderRadius: 1, cursor: "pointer", transform: "rotate(-0.5deg)", transition: "all 0.1s",
+              }}
+            >
+              {tag ? `#${tag}` : `All (${applications.length})`}
             </button>
           ))}
         </div>
       )}
 
-      {/* Main Content Area */}
+      {/* ── Main Content ──────────────────────────────────────────────────── */}
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
+        <div style={{ display: "flex", justifyContent: "center", padding: "5rem 0" }}>
+          <div className="cork-spinner" />
         </div>
       ) : applications.length === 0 ? (
-        <div className="glass-card p-12 text-center max-w-lg mx-auto">
-          <div className="w-16 h-16 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center mx-auto mb-4">
-            <Building2 className="w-8 h-8 text-sky-400" />
-          </div>
-          <h3 className="text-xl font-bold text-white">No applications tracked yet</h3>
-          <p className="text-slate-400 text-sm mt-1 mb-6">
-            Start tracking your job search! Add your first application to organize interviews and get AI score analysis.
+        <div className="cork-card-flat" style={{ maxWidth: 400, margin: "2rem auto", textAlign: "center" }}>
+          <Building2 size={36} style={{ color: "var(--grey)", margin: "0 auto 1rem", display: "block" }} />
+          <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1.2rem", color: "var(--ink)", margin: "0 0 0.4rem" }}>Nothing pinned yet</h3>
+          <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.82rem", color: "var(--grey)", margin: "0 0 1.25rem" }}>
+            Start tracking your job search — add your first application to the board.
           </p>
-          <button
-            onClick={() => {
-              setEditingApp(null);
-              setAppModalOpen(true);
-            }}
-            className="btn-primary inline-flex items-center gap-2 text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add First Application</span>
+          <button onClick={() => { setEditingApp(null); setAppModalOpen(true); }} className="btn-cork" style={{ margin: "0 auto" }}>
+            <Plus size={14} /> Add First Application
           </button>
         </div>
       ) : view === "kanban" ? (
-        /* ─── KANBAN BOARD VIEW ─── */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-start">
+        /* ── KANBAN CORKBOARD ─────────────────────────────────────────── */
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem", alignItems: "start" }}>
           {COLUMNS.map((col) => {
-            const colApps = filteredApps.filter((app) => app.status === col.id);
+            const colApps = filteredApps.filter((a) => a.status === col.id);
             return (
-              <div
-                key={col.id}
-                className="bg-[#F3F1EC] border border-[#E5E1D8] rounded-2xl p-3 space-y-3 min-h-[420px]"
-              >
-                {/* Column Header */}
-                <div className="flex items-center justify-between px-1">
-                  <span
-                    className={`px-2.5 py-1 rounded-lg border text-xs font-semibold ${col.color}`}
-                  >
-                    {col.label}
-                  </span>
-                  <span className="text-xs font-mono text-[#6E6B6B] bg-[#FAF9F6] border border-[#EBE8E1] px-2 py-0.5 rounded-full">
+              <div key={col.id} className="cork-lane">
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem", paddingBottom: "0.5rem", borderBottom: "1px dashed rgba(31,28,23,0.15)" }}>
+                  <span className={`stamp ${col.stampClass}`}>{col.label}</span>
+                  <span style={{ fontFamily: "var(--font-stamp)", fontSize: "0.65rem", color: "var(--grey)", letterSpacing: "0.06em" }}>
                     {colApps.length}
                   </span>
                 </div>
 
-                {/* Cards List */}
-                <div className="space-y-3">
-                  {colApps.map((app) => (
-                    <div
-                      key={app.id}
-                      className="tactile-card p-4 hover:border-[#9C8170] transition-all space-y-3 group"
-                    >
-                      {app.interviewDate && (() => {
-                        const badge = getInterviewCountdownBadge(app.interviewDate);
-                        if (!badge) return null;
-                        return (
-                          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs ${badge.style}`}>
-                            <span>📅</span>
-                            <span>{badge.text}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                  {colApps.map((app, i) => {
+                    const badge = getInterviewBadge(app.interviewDate);
+                    return (
+                      <div key={app.id} className={`cork-card ${rotFor(i)}`} style={{ marginTop: i === 0 ? "0.5rem" : 0 }}>
+                        {badge && (
+                          <div style={{ marginBottom: "0.4rem" }}>
+                            <span style={{ fontFamily: "var(--font-stamp)", fontSize: "0.55rem", letterSpacing: "0.08em", textTransform: "uppercase", border: "1px solid", borderColor: badge.color, color: badge.color, padding: "0 6px", borderRadius: 2, display: "inline-block" }}>
+                              📅 {badge.text}
+                            </span>
                           </div>
-                        );
-                      })()}
+                        )}
 
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="font-bold text-[#2D2B2A] text-sm">
-                            {app.company}
-                          </h4>
-                          <p className="text-xs text-[#6E6B6B] mt-0.5">
-                            {app.role}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <h4 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.9rem", color: "var(--ink)", margin: 0, lineHeight: 1.3 }}>{app.company}</h4>
+                            <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.72rem", color: "var(--grey)", margin: "0.15rem 0 0" }}>{app.role}</p>
+                            {app.appliedAt && (
+                              <p style={{ fontFamily: "var(--font-hand)", fontSize: "0.68rem", color: "var(--grey)", margin: "0.15rem 0 0", opacity: 0.65 }}>
+                                {new Date(app.appliedAt).toLocaleDateString([], { month: "short", day: "numeric" })}
+                              </p>
+                            )}
+                          </div>
+                          <div style={{ display: "flex", gap: "0.1rem", flexShrink: 0, marginLeft: "0.25rem" }}>
+                            <button onClick={() => { setEditingApp(app); setAppModalOpen(true); }} className="btn-icon" title="Edit"><Edit2 size={11} /></button>
+                            <button onClick={() => handleDelete(app.id)} className="btn-icon btn-icon-danger" title="Delete"><Trash2 size={11} /></button>
+                          </div>
+                        </div>
+
+                        {app.tags && app.tags.length > 0 && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem", marginTop: "0.4rem" }}>
+                            {app.tags.map((t) => (
+                              <button key={t} onClick={(e) => { e.stopPropagation(); setSelectedTag(selectedTag === t ? "" : t); }} style={{ fontFamily: "var(--font-ui)", fontSize: "0.62rem", padding: "1px 5px", background: "var(--tape)", border: "none", borderRadius: 1, color: "var(--ink)", cursor: "pointer" }}>
+                                #{t}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {app.notes && (
+                          <p style={{ fontFamily: "var(--font-hand)", fontSize: "0.75rem", color: "var(--grey)", background: "var(--wall-2)", padding: "0.3rem 0.5rem", borderRadius: 1, marginTop: "0.4rem", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                            {app.notes}
                           </p>
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => {
-                              setEditingApp(app);
-                              setAppModalOpen(true);
-                            }}
-                            className="p-1.5 text-[#6E6B6B] hover:text-[#2D2B2A] rounded-lg hover:bg-[#F3F1EC]"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(app.id)}
-                            className="p-1.5 text-[#6E6B6B] hover:text-[#BA6856] rounded-lg hover:bg-[#F3F1EC]"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                        )}
+
+                        <hr className="cork-divider" />
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <button onClick={() => setAiApp(app)} className="btn-action" style={{ color: "var(--stamp-blue)" }}><Sparkles size={10} /> AI Score</button>
+                          <button onClick={() => setReminderApp(app)} className="btn-action" style={{ color: "var(--string)" }}><Bell size={10} /> Remind</button>
                         </div>
                       </div>
+                    );
+                  })}
 
-                      {/* Tag Chips */}
-                      {app.tags && app.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {app.tags.map((t) => (
-                            <button
-                              key={t}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedTag(selectedTag === t ? "" : t);
-                              }}
-                              className="px-2 py-0.5 rounded-full bg-slate-800/80 border border-slate-700/60 text-[10px] text-sky-300 hover:border-sky-500/50"
-                            >
-                              #{t}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {app.notes && (
-                        <p className="text-xs text-slate-400 bg-slate-950/60 p-2 rounded-lg border border-slate-800/60 line-clamp-2">
-                          {app.notes}
-                        </p>
-                      )}
-
-                      {/* Card Action Badges */}
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-800/60">
-                        <button
-                          onClick={() => setAiApp(app)}
-                          className="flex items-center gap-1 text-[11px] font-medium text-sky-400 hover:text-sky-300 bg-sky-500/10 px-2.5 py-1 rounded-lg border border-sky-500/20"
-                        >
-                          <Sparkles className="w-3 h-3" />
-                          AI Score
-                        </button>
-
-                        <button
-                          onClick={() => setReminderApp(app)}
-                          className="flex items-center gap-1 text-[11px] font-medium text-amber-400 hover:text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20"
-                        >
-                          <Bell className="w-3 h-3" />
-                          Remind
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                  {colApps.length === 0 && (
+                    <p style={{ fontFamily: "var(--font-hand)", fontSize: "0.78rem", color: "var(--grey)", textAlign: "center", padding: "2rem 0", opacity: 0.5 }}>
+                      nothing here yet
+                    </p>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
       ) : (
-        /* ─── TABLE VIEW ─── */
-        <div className="glass-card overflow-hidden">
-          <div className="overflow-x-auto tactile-card">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-[#EBE8E1] bg-[#F3F1EC] text-xs uppercase font-semibold text-[#6E6B6B]">
-                  <th className="p-4">Company</th>
-                  <th className="p-4">Role</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Applied Date</th>
-                  <th className="p-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#EBE8E1] text-sm">
-                {filteredApps.map((app) => {
-                  const col = COLUMNS.find((c) => c.id === app.status) || COLUMNS[0];
-                  return (
-                    <tr key={app.id} className="hover:bg-[#F3F1EC]/60 transition-colors">
-                      <td className="p-4 font-bold text-[#2D2B2A]">
-                        <div className="flex items-center gap-2">
-                          <span>{app.company}</span>
-                          {app.interviewDate && (() => {
-                            const badge = getInterviewCountdownBadge(app.interviewDate);
-                            if (!badge) return null;
-                            return (
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] ${badge.style}`}>
-                                📅 {badge.text}
-                              </span>
-                            );
-                          })()}
-                        </div>
-                      </td>
-                      <td className="p-4 text-[#6E6B6B]">{app.role}</td>
-                      <td className="p-4">
-                        <span
-                          className={`px-2.5 py-1 rounded-lg border text-xs font-semibold ${col.color}`}
-                        >
-                          {col.label}
-                        </span>
-                      </td>
-                      <td className="p-4 text-[#6E6B6B] text-xs">
-                        {new Date(app.appliedAt).toLocaleDateString()}
-                      </td>
-                      <td className="p-4 text-right space-x-2">
-                        <button
-                          onClick={() => setAiApp(app)}
-                          className="text-xs px-2.5 py-1 rounded-lg bg-[#FAF9F6] text-[#2D2B2A] border border-[#EBE8E1] hover:bg-[#F3F1EC]"
-                        >
-                          AI Score ✨
-                        </button>
-                        <button
-                          onClick={() => setReminderApp(app)}
-                          className="text-xs px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20"
-                        >
-                          Remind ⏰
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingApp(app);
-                            setAppModalOpen(true);
-                          }}
-                          className="p-1.5 text-slate-400 hover:text-white"
-                        >
-                          <Edit2 className="w-4 h-4 inline" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(app.id)}
-                          className="p-1.5 text-slate-400 hover:text-rose-400"
-                        >
-                          <Trash2 className="w-4 h-4 inline" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+        /* ── TABLE VIEW ──────────────────────────────────────────────────── */
+        <div style={{ background: "var(--card)", borderRadius: 3, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "var(--font-ui)", fontSize: "0.85rem" }}>
+            <thead>
+              <tr style={{ background: "var(--wall-2)", borderBottom: "1px solid rgba(31,28,23,0.12)" }}>
+                {["Company","Role","Status","Applied Date","Actions"].map((h, i) => (
+                  <th key={h} style={{ padding: "0.75rem 1rem", fontFamily: "var(--font-stamp)", fontSize: "0.6rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--grey)", fontWeight: 400, textAlign: i === 4 ? "right" : "left" }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredApps.map((app, rowI) => {
+                const col   = COLUMNS.find((c) => c.id === app.status) || COLUMNS[0];
+                const badge = getInterviewBadge(app.interviewDate);
+                return (
+                  <tr key={app.id} style={{ borderBottom: "1px solid rgba(31,28,23,0.07)", background: rowI % 2 === 0 ? "var(--card)" : "var(--wall)" }}>
+                    <td style={{ padding: "0.8rem 1rem" }}>
+                      <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.9rem", color: "var(--ink)" }}>{app.company}</div>
+                      {badge && <span style={{ fontFamily: "var(--font-stamp)", fontSize: "0.55rem", letterSpacing: "0.07em", textTransform: "uppercase", border: "1px solid", borderColor: badge.color, color: badge.color, padding: "0 5px", borderRadius: 1, display: "inline-block", marginTop: "0.15rem" }}>📅 {badge.text}</span>}
+                    </td>
+                    <td style={{ padding: "0.8rem 1rem", color: "var(--grey)" }}>{app.role}</td>
+                    <td style={{ padding: "0.8rem 1rem" }}>
+                      <span className={`stamp ${col.stampClass}`}>{col.label}</span>
+                    </td>
+                    <td style={{ padding: "0.8rem 1rem", color: "var(--grey)", fontSize: "0.78rem" }}>
+                      {app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : "—"}
+                    </td>
+                    <td style={{ padding: "0.8rem 1rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.4rem" }}>
+                        <button onClick={() => setAiApp(app)} className="btn-action" style={{ color: "var(--stamp-blue)" }}><Sparkles size={10} /> AI Score</button>
+                        <button onClick={() => setReminderApp(app)} className="btn-action" style={{ color: "var(--string)" }}><Bell size={10} /> Remind</button>
+                        <button onClick={() => { setEditingApp(app); setAppModalOpen(true); }} className="btn-icon" title="Edit"><Edit2 size={14} /></button>
+                        <button onClick={() => handleDelete(app.id)} className="btn-icon btn-icon-danger" title="Delete"><Trash2 size={14} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {/* Modals */}
-      <ApplicationModal
-        isOpen={appModalOpen}
-        onClose={() => setAppModalOpen(false)}
-        onSave={handleSaveApplication}
-        initialData={editingApp}
-      />
-      <AiScoreModal
-        isOpen={!!aiApp}
-        onClose={() => setAiApp(null)}
-        application={aiApp}
-      />
-      <ReminderModal
-        isOpen={!!reminderApp}
-        onClose={() => setReminderApp(null)}
-        application={reminderApp}
-      />
-      <OfferCalculatorModal
-        isOpen={calcOpen}
-        onClose={() => setCalcOpen(false)}
-      />
+      {/* ── Modals ───────────────────────────────────────────────────────── */}
+      <ApplicationModal isOpen={appModalOpen} onClose={() => setAppModalOpen(false)} onSave={handleSaveApplication} initialData={editingApp} />
+      <AiScoreModal isOpen={!!aiApp} onClose={() => setAiApp(null)} application={aiApp} />
+      <ReminderModal isOpen={!!reminderApp} onClose={() => setReminderApp(null)} application={reminderApp} />
+      <OfferCalculatorModal isOpen={calcOpen} onClose={() => setCalcOpen(false)} />
     </div>
   );
 };

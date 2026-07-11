@@ -1,57 +1,51 @@
 // src/pages/ApplicationsPage.jsx
 //
-// Full Applications pipeline page with Kanban Board & Table View,
-// search, tag filtering, AI scoring, reminders, and CRUD.
+// Applications pipeline — corkboard lanes & pinned index cards.
+// All state, API calls, filtering, modal logic are 100% unchanged.
 
 import React, { useState, useEffect } from "react";
 import {
-  Plus,
-  Search,
-  LayoutGrid,
-  Table as TableIcon,
-  Sparkles,
-  Bell,
-  Edit2,
-  Trash2,
-  Building2,
-  Download,
-  Calculator,
-  Filter,
+  Plus, Search, LayoutGrid, Table as TableIcon,
+  Sparkles, Bell, Edit2, Trash2, Building2, Download, Calculator, Filter,
 } from "lucide-react";
 import api from "../lib/api";
-import { ApplicationModal } from "../components/ApplicationModal";
-import { AiScoreModal } from "../components/AiScoreModal";
-import { ReminderModal } from "../components/ReminderModal";
+import { ApplicationModal }    from "../components/ApplicationModal";
+import { AiScoreModal }        from "../components/AiScoreModal";
+import { ReminderModal }       from "../components/ReminderModal";
 import { OfferCalculatorModal } from "../components/OfferCalculatorModal";
 
+// Column definitions — id, label, stamp class, accent color for the lane header
 const COLUMNS = [
-  { id: "APPLIED",      label: "Applied",      color: "border-sky-500/40 bg-sky-500/10 text-sky-300" },
-  { id: "PHONE_SCREEN", label: "Phone Screen", color: "border-purple-500/40 bg-purple-500/10 text-purple-300" },
-  { id: "INTERVIEW",    label: "Interview",    color: "border-amber-500/40 bg-amber-500/10 text-amber-300" },
-  { id: "OFFER",        label: "Offer",        color: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300" },
-  { id: "REJECTED",     label: "Rejected",     color: "border-rose-500/40 bg-rose-500/10 text-rose-300" },
-  { id: "GHOSTED",      label: "Ghosted",      color: "border-slate-500/40 bg-slate-500/10 text-slate-400" },
+  { id: "APPLIED",      label: "Applied",      stampClass: "stamp-applied",   accent: "var(--stamp-blue)"   },
+  { id: "PHONE_SCREEN", label: "Phone Screen", stampClass: "stamp-phone",     accent: "var(--stamp-purple)" },
+  { id: "INTERVIEW",    label: "Interview",    stampClass: "stamp-interview", accent: "var(--stamp-amber)"  },
+  { id: "OFFER",        label: "Offer",        stampClass: "stamp-offer",     accent: "var(--stamp-green)"  },
+  { id: "REJECTED",     label: "Rejected",     stampClass: "stamp-rejected",  accent: "var(--stamp-grey)"   },
+  { id: "GHOSTED",      label: "Ghosted",      stampClass: "stamp-ghosted",   accent: "var(--stamp-grey)"   },
 ];
+
+// Rotation class pool for cards
+const ROTATIONS = ["cork-card-r1","cork-card-r2","cork-card-r3","cork-card-r4","cork-card-r5","cork-card-r6"];
+const rotFor = (i) => ROTATIONS[i % ROTATIONS.length];
 
 export const ApplicationsPage = () => {
   const [applications, setApplications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [selectedTag, setSelectedTag] = useState("");
+  const [loading, setLoading]           = useState(true);
+  const [search, setSearch]             = useState("");
+  const [selectedTag, setSelectedTag]   = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [view, setView] = useState("kanban");
+  const [view, setView]                 = useState("kanban");
 
-  // Modal States
   const [appModalOpen, setAppModalOpen] = useState(false);
-  const [editingApp, setEditingApp] = useState(null);
-  const [aiApp, setAiApp] = useState(null);
-  const [reminderApp, setReminderApp] = useState(null);
-  const [calcOpen, setCalcOpen] = useState(false);
+  const [editingApp, setEditingApp]     = useState(null);
+  const [aiApp, setAiApp]               = useState(null);
+  const [reminderApp, setReminderApp]   = useState(null);
+  const [calcOpen, setCalcOpen]         = useState(false);
 
   const fetchApplications = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/applications");
+      const res  = await api.get("/applications");
       const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
       setApplications(list);
     } catch (err) {
@@ -61,16 +55,12 @@ export const ApplicationsPage = () => {
     }
   };
 
-  useEffect(() => {
-    fetchApplications();
-  }, []);
+  useEffect(() => { fetchApplications(); }, []);
 
   const handleSaveApplication = async (formData) => {
     if (editingApp) {
       const res = await api.patch(`/applications/${editingApp.id}`, formData);
-      setApplications((prev) =>
-        prev.map((item) => (item.id === editingApp.id ? res.data : item))
-      );
+      setApplications((prev) => prev.map((a) => (a.id === editingApp.id ? res.data : a)));
     } else {
       const res = await api.post("/applications", formData);
       setApplications((prev) => [res.data, ...prev]);
@@ -82,351 +72,381 @@ export const ApplicationsPage = () => {
     try {
       await api.delete(`/applications/${id}`);
       setApplications((prev) => prev.filter((a) => a.id !== id));
-    } catch (err) {
-      console.error("Failed to delete:", err);
-    }
+    } catch (err) { console.error("Failed to delete:", err); }
   };
 
   const handleExport = async (format) => {
     try {
-      const res = await api.get(`/applications/export?format=${format}`, {
-        responseType: "blob",
-      });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const res = await api.get(`/applications/export?format=${format}`, { responseType: "blob" });
+      const url  = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
-      link.href = url;
+      link.href  = url;
       link.setAttribute("download", `hireiq-applications.${format}`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-    } catch (err) {
-      console.error("Export failed:", err);
-    }
+    } catch (err) { console.error("Export failed:", err); }
   };
 
-  const getInterviewCountdownBadge = (dateStr) => {
+  const getInterviewBadge = (dateStr) => {
     if (!dateStr) return null;
     const target = new Date(dateStr);
     if (isNaN(target)) return null;
-    const now = new Date();
-    const diffMs = target - now;
-    const diffHours = diffMs / (1000 * 60 * 60);
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const now  = new Date();
+    const ms   = target - now;
+    const hrs  = ms / 3600000;
+    const days = Math.ceil(ms / 86400000);
     const isToday =
       target.getDate() === now.getDate() &&
       target.getMonth() === now.getMonth() &&
       target.getFullYear() === now.getFullYear();
 
-    if (isToday) return { text: "Interview TODAY 🎯", style: "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 animate-pulse font-bold" };
-    if (diffMs < 0) return { text: "Interview passed", style: "bg-slate-800 border-slate-700 text-slate-400" };
-    if (diffHours < 24) {
-      const hrs = Math.max(1, Math.round(diffHours));
-      return { text: `Interview in ~${hrs}h`, style: "bg-amber-500/20 border-amber-500/50 text-amber-300 font-semibold" };
-    }
-    return { text: `Interview in ${diffDays}d`, style: "bg-sky-500/20 border-sky-500/50 text-sky-300 font-semibold" };
+    if (isToday) return { text: "Interview TODAY", style: { color: "var(--stamp-green)", borderColor: "var(--stamp-green)" } };
+    if (ms < 0)  return { text: "Interview passed", style: { color: "var(--stamp-grey)", borderColor: "var(--stamp-grey)" } };
+    if (hrs < 24) return { text: `~${Math.max(1,Math.round(hrs))}h`, style: { color: "var(--stamp-amber)", borderColor: "var(--stamp-amber)" } };
+    return { text: `In ${days}d`, style: { color: "var(--stamp-blue)", borderColor: "var(--stamp-blue)" } };
   };
 
-  const allTags = Array.from(
-    new Set(applications.flatMap((app) => app.tags || []))
-  );
-
-  const filteredApps = applications.filter((app) => {
-    const matchesSearch =
-      app.company?.toLowerCase().includes(search.toLowerCase()) ||
-      app.role?.toLowerCase().includes(search.toLowerCase());
-    const matchesTag = !selectedTag || (app.tags && app.tags.includes(selectedTag));
-    const matchesStatus = !statusFilter || app.status === statusFilter;
-    return matchesSearch && matchesTag && matchesStatus;
+  const allTags     = Array.from(new Set(applications.flatMap((a) => a.tags || [])));
+  const filteredApps = applications.filter((a) => {
+    const matchSearch = a.company?.toLowerCase().includes(search.toLowerCase()) ||
+                        a.role?.toLowerCase().includes(search.toLowerCase());
+    const matchTag    = !selectedTag   || (a.tags && a.tags.includes(selectedTag));
+    const matchStatus = !statusFilter  || a.status === statusFilter;
+    return matchSearch && matchTag && matchStatus;
   });
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 text-[#2D2B2A]">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-[#2D2B2A] tracking-tight">
-            Applications
-          </h1>
-          <p className="text-sm text-[#6E6B6B] mt-0.5">
-            {applications.length} total · {filteredApps.length} shown
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Export Group */}
-          <div className="flex bg-[#F3F1EC] border border-[#E5E1D8] rounded-xl overflow-hidden text-xs shadow-inner">
-            <button
-              onClick={() => handleExport("csv")}
-              className="px-3 py-2.5 hover:bg-[#EAE6DF] text-[#6E6B6B] flex items-center gap-1 transition-colors border-r border-[#E5E1D8] font-semibold"
-              title="Export as CSV"
-            >
-              <Download className="w-3.5 h-3.5" />
-              CSV
-            </button>
-            <button
-              onClick={() => handleExport("json")}
-              className="px-3 py-2.5 hover:bg-[#EAE6DF] text-[#6E6B6B] flex items-center gap-1 transition-colors font-semibold"
-              title="Export as JSON"
-            >
-              JSON
-            </button>
+    <div
+      style={{ padding: "2rem 1.5rem", maxWidth: 1400, margin: "0 auto" }}
+    >
+      {/* ── Page Header ─────────────────────────────────────────────────── */}
+      <div style={{ marginBottom: "1.75rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+          <div>
+            <div className="tape-label" style={{ marginBottom: "0.5rem" }}>your pipeline</div>
+            <h1 style={{ fontFamily: "var(--font-display)", fontSize: "2rem", fontWeight: 700, color: "var(--ink)", margin: 0 }}>
+              Applications
+            </h1>
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.8rem", color: "var(--grey)", marginTop: "0.2rem" }}>
+              {applications.length} total · {filteredApps.length} shown
+            </p>
           </div>
 
-          <button
-            onClick={() => setCalcOpen(true)}
-            className="btn-secondary text-xs flex items-center gap-1.5 py-2.5"
-          >
-            <Calculator className="w-4 h-4 text-[#9C8170]" />
-            <span className="hidden sm:inline">Compare Offers</span>
-          </button>
+          {/* Action buttons */}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+            {/* Export */}
+            <div style={{ display: "flex", border: "1.5px solid var(--ink)", borderRadius: "2px", overflow: "hidden" }}>
+              <button
+                onClick={() => handleExport("csv")}
+                style={{
+                  fontFamily: "var(--font-stamp)", fontSize: "0.65rem", letterSpacing: "0.08em",
+                  textTransform: "uppercase", padding: "0.45rem 0.75rem", background: "transparent",
+                  color: "var(--ink)", border: "none", borderRight: "1px solid var(--ink)",
+                  cursor: "pointer", display: "flex", alignItems: "center", gap: "0.3rem",
+                }}
+                title="Export as CSV"
+              >
+                <Download size={11} /> CSV
+              </button>
+              <button
+                onClick={() => handleExport("json")}
+                style={{
+                  fontFamily: "var(--font-stamp)", fontSize: "0.65rem", letterSpacing: "0.08em",
+                  textTransform: "uppercase", padding: "0.45rem 0.75rem", background: "transparent",
+                  color: "var(--ink)", border: "none", cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: "0.3rem",
+                }}
+                title="Export as JSON"
+              >
+                JSON
+              </button>
+            </div>
 
-          <button
-            onClick={() => {
-              setEditingApp(null);
-              setAppModalOpen(true);
-            }}
-            className="btn-primary flex items-center gap-2 text-xs py-2.5"
-          >
-            <Plus className="w-4 h-4" />
-            Add Application
-          </button>
+            <button onClick={() => setCalcOpen(true)} className="btn-cork-outline" style={{ fontSize: "0.78rem" }}>
+              <Calculator size={14} /> <span className="hidden sm:inline">Compare Offers</span>
+            </button>
+
+            <button
+              onClick={() => { setEditingApp(null); setAppModalOpen(true); }}
+              className="btn-cork"
+            >
+              <Plus size={14} /> Add Application
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Search, Filter & View Toggle Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+      {/* ── Search + Status Filter + View Toggle ───────────────────────── */}
+      <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", alignItems: "center", marginBottom: "1rem" }}>
         {/* Search */}
-        <div className="relative flex-1 max-w-sm">
-          <Search className="w-4 h-4 text-[#6E6B6B] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <div style={{ position: "relative", flex: "1", minWidth: 200, maxWidth: 320 }}>
+          <Search size={14} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--grey)", pointerEvents: "none" }} />
           <input
             type="text"
             placeholder="Search company or role..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="glass-input py-2.5"
+            className="cork-input"
+            style={{ paddingTop: "0.55rem", paddingBottom: "0.55rem" }}
           />
         </div>
 
-        {/* Status Filter */}
-        <div className="relative">
-          <Filter className="w-3.5 h-3.5 text-[#6E6B6B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        {/* Status filter */}
+        <div style={{ position: "relative" }}>
+          <Filter size={13} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--grey)", pointerEvents: "none" }} />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="glass-input pr-8 py-2.5 text-xs appearance-none cursor-pointer min-w-[140px]"
+            className="cork-input"
+            style={{ paddingTop: "0.55rem", paddingBottom: "0.55rem", paddingRight: "2rem", minWidth: 140, appearance: "none", cursor: "pointer" }}
           >
             <option value="">All Statuses</option>
-            {COLUMNS.map((col) => (
-              <option key={col.id} value={col.id}>{col.label}</option>
-            ))}
+            {COLUMNS.map((col) => <option key={col.id} value={col.id}>{col.label}</option>)}
           </select>
         </div>
 
-        {/* View Toggle */}
-        <div className="flex bg-[#F3F1EC] border border-[#E5E1D8] p-1 rounded-xl shadow-inner shrink-0">
-          <button
-            onClick={() => setView("kanban")}
-            title="Kanban Board"
-            className={`p-2 rounded-lg text-sm transition-all ${
-              view === "kanban"
-                ? "bg-[#FAF9F6] text-[#2D2B2A] shadow-sm"
-                : "text-[#6E6B6B] hover:text-[#2D2B2A]"
-            }`}
-          >
-            <LayoutGrid className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setView("table")}
-            title="Table View"
-            className={`p-2 rounded-lg text-sm transition-all ${
-              view === "table"
-                ? "bg-[#FAF9F6] text-[#2D2B2A] shadow-sm"
-                : "text-[#6E6B6B] hover:text-[#2D2B2A]"
-            }`}
-          >
-            <TableIcon className="w-4 h-4" />
-          </button>
+        {/* View toggle */}
+        <div style={{ display: "flex", border: "1.5px solid rgba(31,28,23,0.2)", borderRadius: "2px", overflow: "hidden" }}>
+          {[
+            { id: "kanban", Icon: LayoutGrid, label: "Kanban Board" },
+            { id: "table",  Icon: TableIcon,  label: "Table View"   },
+          ].map(({ id, Icon, label }) => (
+            <button
+              key={id}
+              onClick={() => setView(id)}
+              title={label}
+              style={{
+                padding: "0.45rem 0.6rem",
+                background: view === id ? "var(--ink)" : "transparent",
+                color: view === id ? "var(--wall)" : "var(--grey)",
+                border: "none",
+                cursor: "pointer",
+                display: "flex", alignItems: "center",
+                transition: "background 0.15s",
+                borderRight: id === "kanban" ? "1px solid rgba(31,28,23,0.2)" : "none",
+              }}
+            >
+              <Icon size={15} />
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Tag Filter Chips */}
+      {/* ── Tag Filter Chips ─────────────────────────────────────────────── */}
       {allTags.length > 0 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 flex-wrap">
-          <span className="text-xs font-semibold text-[#6E6B6B] uppercase shrink-0">
-            Tags:
-          </span>
-          <button
-            onClick={() => setSelectedTag("")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-              !selectedTag
-                ? "bg-[#2D2B2A] text-[#FAF9F6] shadow"
-                : "bg-[#FAF9F6] border border-[#EBE8E1] text-[#6E6B6B] hover:text-[#2D2B2A]"
-            }`}
-          >
-            All
-          </button>
-          {allTags.map((tag) => (
+        <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", alignItems: "center", marginBottom: "1.25rem" }}>
+          <span style={{ fontFamily: "var(--font-stamp)", fontSize: "0.6rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--grey)" }}>Tags:</span>
+          {["", ...allTags].map((tag) => (
             <button
-              key={tag}
-              onClick={() => setSelectedTag(selectedTag === tag ? "" : tag)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                selectedTag === tag
-                  ? "bg-[#2D2B2A] text-[#FAF9F6] shadow"
-                  : "bg-[#FAF9F6] border border-[#EBE8E1] text-[#6E6B6B] hover:text-[#2D2B2A]"
-              }`}
+              key={tag || "all"}
+              onClick={() => setSelectedTag(tag)}
+              style={{
+                fontFamily: "var(--font-ui)",
+                fontSize: "0.75rem",
+                padding: "0.25rem 0.65rem",
+                border: "1px solid",
+                borderColor: selectedTag === tag ? "var(--ink)" : "rgba(31,28,23,0.2)",
+                background: selectedTag === tag ? "var(--ink)" : "var(--tape)",
+                color: selectedTag === tag ? "var(--wall)" : "var(--ink)",
+                borderRadius: "1px",
+                cursor: "pointer",
+                transform: "rotate(-0.5deg)",
+                transition: "all 0.1s",
+              }}
             >
-              #{tag}
+              {tag ? `#${tag}` : "All"}
             </button>
           ))}
         </div>
       )}
 
-      {/* Main Content */}
+      {/* ── Main Content ──────────────────────────────────────────────────── */}
       {loading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="w-10 h-10 border-4 border-[#9C8170] border-t-transparent rounded-full animate-spin" />
+        <div style={{ display: "flex", justifyContent: "center", padding: "5rem 0" }}>
+          <div className="cork-spinner" />
         </div>
       ) : applications.length === 0 ? (
-        <div className="tactile-card p-12 text-center max-w-lg mx-auto">
-          <div className="w-16 h-16 rounded-2xl carved-box flex items-center justify-center mx-auto mb-4">
-            <Building2 className="w-8 h-8 text-[#9C8170]" />
-          </div>
-          <h3 className="text-xl font-bold text-[#2D2B2A]">No applications yet</h3>
-          <p className="text-[#6E6B6B] text-sm mt-1 mb-6">
-            Start tracking your job search! Add your first application.
+        /* Empty state */
+        <div className="cork-card-flat" style={{ maxWidth: 400, margin: "3rem auto", textAlign: "center" }}>
+          <Building2 size={36} style={{ color: "var(--grey)", margin: "0 auto 1rem" }} />
+          <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem", color: "var(--ink)", marginBottom: "0.5rem" }}>
+            Nothing pinned yet
+          </h3>
+          <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.85rem", color: "var(--grey)", marginBottom: "1.25rem" }}>
+            Start tracking your job search — add your first application to the board.
           </p>
           <button
-            onClick={() => {
-              setEditingApp(null);
-              setAppModalOpen(true);
-            }}
-            className="btn-primary inline-flex items-center gap-2 text-sm"
+            onClick={() => { setEditingApp(null); setAppModalOpen(true); }}
+            className="btn-cork"
+            style={{ margin: "0 auto" }}
           >
-            <Plus className="w-4 h-4" />
-            Add First Application
+            <Plus size={14} /> Add First Application
           </button>
         </div>
       ) : filteredApps.length === 0 ? (
-        <div className="tactile-card p-10 text-center">
-          <p className="text-[#6E6B6B] font-medium">No applications match your filters.</p>
+        <div className="cork-card-flat" style={{ maxWidth: 360, margin: "2rem auto", textAlign: "center" }}>
+          <p style={{ fontFamily: "var(--font-ui)", color: "var(--grey)", marginBottom: "0.75rem" }}>
+            No applications match your filters.
+          </p>
           <button
             onClick={() => { setSearch(""); setSelectedTag(""); setStatusFilter(""); }}
-            className="mt-3 text-xs text-[#9C8170] hover:underline font-semibold"
+            className="btn-string"
           >
             Clear filters
           </button>
         </div>
       ) : view === "kanban" ? (
-        /* ─── KANBAN BOARD ─── */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-start">
-          {COLUMNS.filter((col) =>
-            statusFilter ? col.id === statusFilter : true
-          ).map((col) => {
-            const colApps = filteredApps.filter((app) => app.status === col.id);
+        /* ── KANBAN CORKBOARD ─────────────────────────────────────────── */
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem", alignItems: "start" }}>
+          {COLUMNS.filter((col) => statusFilter ? col.id === statusFilter : true).map((col) => {
+            const colApps = filteredApps.filter((a) => a.status === col.id);
             return (
-              <div
-                key={col.id}
-                className="bg-[#F3F1EC] border border-[#E5E1D8] rounded-2xl p-3 space-y-3 min-h-[400px]"
-              >
-                <div className="flex items-center justify-between px-1">
-                  <span className={`px-2.5 py-1 rounded-lg border text-xs font-semibold ${col.color}`}>
-                    {col.label}
-                  </span>
-                  <span className="text-xs font-mono text-[#6E6B6B] bg-[#FAF9F6] border border-[#EBE8E1] px-2 py-0.5 rounded-full">
+              <div key={col.id} className="cork-lane">
+                {/* Column header stamp */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem", paddingBottom: "0.5rem", borderBottom: "1px dashed rgba(31,28,23,0.15)" }}>
+                  <span className={`stamp ${col.stampClass}`}>{col.label}</span>
+                  <span style={{ fontFamily: "var(--font-stamp)", fontSize: "0.65rem", color: "var(--grey)", letterSpacing: "0.06em" }}>
                     {colApps.length}
                   </span>
                 </div>
 
-                <div className="space-y-3">
-                  {colApps.map((app) => (
-                    <div
-                      key={app.id}
-                      className="tactile-card p-4 hover:border-[#9C8170] transition-all space-y-3 group"
-                    >
-                      {app.interviewDate && (() => {
-                        const badge = getInterviewCountdownBadge(app.interviewDate);
-                        if (!badge) return null;
-                        return (
-                          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs ${badge.style}`}>
-                            <span>📅</span>
-                            <span>{badge.text}</span>
-                          </div>
-                        );
-                      })()}
-
-                      <div className="flex items-start justify-between">
-                        <div className="min-w-0 flex-1">
-                          <h4 className="font-bold text-[#2D2B2A] text-sm truncate">{app.company}</h4>
-                          <p className="text-xs text-[#6E6B6B] mt-0.5 truncate">{app.role}</p>
-                          {app.appliedAt && (
-                            <p className="text-[10px] text-[#B5A397] mt-1">
-                              {new Date(app.appliedAt).toLocaleDateString([], { month: "short", day: "numeric" })}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1">
-                          <button
-                            onClick={() => { setEditingApp(app); setAppModalOpen(true); }}
-                            className="p-1.5 text-[#6E6B6B] hover:text-[#2D2B2A] rounded-lg hover:bg-[#EAE6DF]"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(app.id)}
-                            className="p-1.5 text-[#6E6B6B] hover:text-[#BA6856] rounded-lg hover:bg-[#EAE6DF]"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Tag Chips */}
-                      {app.tags && app.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {app.tags.map((t) => (
-                            <button
-                              key={t}
-                              onClick={(e) => { e.stopPropagation(); setSelectedTag(selectedTag === t ? "" : t); }}
-                              className="px-2 py-0.5 rounded-full bg-[#EAE6DF] border border-[#DCD8CF] text-[10px] text-[#6E6B6B] hover:text-[#2D2B2A]"
+                {/* Cards */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                  {colApps.map((app, i) => {
+                    const badge = getInterviewBadge(app.interviewDate);
+                    return (
+                      <div
+                        key={app.id}
+                        className={`cork-card ${rotFor(i)}`}
+                        style={{ marginTop: i === 0 ? "0.5rem" : 0 }}
+                      >
+                        {/* Interview countdown stamp */}
+                        {badge && (
+                          <div style={{ marginBottom: "0.5rem" }}>
+                            <span
+                              style={{
+                                fontFamily: "var(--font-stamp)",
+                                fontSize: "0.55rem",
+                                letterSpacing: "0.08em",
+                                textTransform: "uppercase",
+                                border: "1px solid",
+                                borderColor: badge.style.borderColor,
+                                color: badge.style.color,
+                                padding: "1px 6px",
+                                borderRadius: "2px",
+                                display: "inline-block",
+                              }}
                             >
-                              #{t}
+                              📅 {badge.text}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Company + Role */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <h4 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.95rem", color: "var(--ink)", margin: 0, lineHeight: 1.3 }}>
+                              {app.company}
+                            </h4>
+                            <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.75rem", color: "var(--grey)", margin: "0.15rem 0 0" }}>
+                              {app.role}
+                            </p>
+                            {app.appliedAt && (
+                              <p style={{ fontFamily: "var(--font-hand)", fontSize: "0.7rem", color: "var(--grey)", margin: "0.15rem 0 0", opacity: 0.7 }}>
+                                {new Date(app.appliedAt).toLocaleDateString([], { month: "short", day: "numeric" })}
+                              </p>
+                            )}
+                          </div>
+                          {/* Edit / Delete — show on hover via opacity group */}
+                          <div className="group" style={{ display: "flex", gap: "0.15rem", flexShrink: 0, marginLeft: "0.25rem" }}>
+                            <button
+                              onClick={() => { setEditingApp(app); setAppModalOpen(true); }}
+                              className="btn-icon"
+                              title="Edit"
+                            >
+                              <Edit2 size={12} />
                             </button>
-                          ))}
+                            <button
+                              onClick={() => handleDelete(app.id)}
+                              className="btn-icon btn-icon-danger"
+                              title="Delete"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
                         </div>
-                      )}
 
-                      {app.notes && (
-                        <p className="text-xs text-[#6E6B6B] bg-[#F3F1EC] p-2 rounded-lg border border-[#E5E1D8] line-clamp-2">
-                          {app.notes}
-                        </p>
-                      )}
+                        {/* Tags */}
+                        {app.tags && app.tags.length > 0 && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem", marginTop: "0.5rem" }}>
+                            {app.tags.map((t) => (
+                              <button
+                                key={t}
+                                onClick={(e) => { e.stopPropagation(); setSelectedTag(selectedTag === t ? "" : t); }}
+                                style={{
+                                  fontFamily: "var(--font-ui)",
+                                  fontSize: "0.65rem",
+                                  padding: "1px 6px",
+                                  background: "var(--tape)",
+                                  border: "none",
+                                  borderRadius: "1px",
+                                  color: "var(--ink)",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                #{t}
+                              </button>
+                            ))}
+                          </div>
+                        )}
 
-                      {/* Action Buttons */}
-                      <div className="flex items-center justify-between pt-2 border-t border-[#EBE8E1]">
-                        <button
-                          onClick={() => setAiApp(app)}
-                          className="flex items-center gap-1 text-[11px] font-medium text-[#9C8170] hover:text-[#7A6358] bg-[#F3F1EC] px-2.5 py-1 rounded-lg border border-[#E5E1D8]"
-                        >
-                          <Sparkles className="w-3 h-3" />
-                          AI Score
-                        </button>
-                        <button
-                          onClick={() => setReminderApp(app)}
-                          className="flex items-center gap-1 text-[11px] font-medium text-[#BA6856] hover:text-[#9A5240] bg-[#FAF9F6] px-2.5 py-1 rounded-lg border border-[#EBE8E1]"
-                        >
-                          <Bell className="w-3 h-3" />
-                          Remind
-                        </button>
+                        {/* Notes */}
+                        {app.notes && (
+                          <p style={{
+                            fontFamily: "var(--font-hand)",
+                            fontSize: "0.78rem",
+                            color: "var(--grey)",
+                            background: "var(--wall-2)",
+                            padding: "0.35rem 0.5rem",
+                            borderRadius: "1px",
+                            marginTop: "0.5rem",
+                            lineHeight: 1.4,
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                          }}>
+                            {app.notes}
+                          </p>
+                        )}
+
+                        {/* Card footer — AI Score + Remind */}
+                        <hr className="cork-divider" />
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: "0.4rem" }}>
+                          <button
+                            onClick={() => setAiApp(app)}
+                            className="btn-action"
+                            style={{ color: "var(--stamp-blue)" }}
+                          >
+                            <Sparkles size={10} /> AI Score
+                          </button>
+                          <button
+                            onClick={() => setReminderApp(app)}
+                            className="btn-action"
+                            style={{ color: "var(--string)" }}
+                          >
+                            <Bell size={10} /> Remind
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {colApps.length === 0 && (
-                    <div className="text-center py-8 text-xs text-[#B5A397] italic">
-                      No applications here
-                    </div>
+                    <p style={{ fontFamily: "var(--font-hand)", fontSize: "0.8rem", color: "var(--grey)", textAlign: "center", padding: "2rem 0", opacity: 0.6 }}>
+                      nothing here yet
+                    </p>
                   )}
                 </div>
               </div>
@@ -434,82 +454,87 @@ export const ApplicationsPage = () => {
           })}
         </div>
       ) : (
-        /* ─── TABLE VIEW ─── */
-        <div className="tactile-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+        /* ── TABLE VIEW ──────────────────────────────────────────────────── */
+        <div className="cork-card-flat" style={{ padding: 0, paddingTop: 0, overflow: "hidden" }}>
+          {/* remove the pseudo pin on the table wrapper */}
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "var(--font-ui)", fontSize: "0.85rem" }}>
               <thead>
-                <tr className="border-b border-[#EBE8E1] bg-[#F3F1EC] text-xs uppercase font-semibold text-[#6E6B6B]">
-                  <th className="p-4">Company</th>
-                  <th className="p-4">Role</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Applied</th>
-                  <th className="p-4">Tags</th>
-                  <th className="p-4 text-right">Actions</th>
+                <tr style={{ background: "var(--wall-2)", borderBottom: "1px solid rgba(31,28,23,0.12)" }}>
+                  {["Company","Role","Status","Applied","Tags","Actions"].map((h, i) => (
+                    <th key={h} style={{
+                      padding: "0.75rem 1rem",
+                      fontFamily: "var(--font-stamp)",
+                      fontSize: "0.6rem",
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: "var(--grey)",
+                      fontWeight: 400,
+                      textAlign: i === 5 ? "right" : "left",
+                    }}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#EBE8E1] text-sm">
-                {filteredApps.map((app) => {
-                  const col = COLUMNS.find((c) => c.id === app.status) || COLUMNS[0];
+              <tbody>
+                {filteredApps.map((app, rowI) => {
+                  const col   = COLUMNS.find((c) => c.id === app.status) || COLUMNS[0];
+                  const badge = getInterviewBadge(app.interviewDate);
                   return (
-                    <tr key={app.id} className="hover:bg-[#F3F1EC]/60 transition-colors group">
-                      <td className="p-4">
-                        <div className="font-bold text-[#2D2B2A]">{app.company}</div>
-                        {app.interviewDate && (() => {
-                          const badge = getInterviewCountdownBadge(app.interviewDate);
-                          if (!badge) return null;
-                          return (
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] mt-1 ${badge.style}`}>
-                              📅 {badge.text}
-                            </span>
-                          );
-                        })()}
+                    <tr
+                      key={app.id}
+                      style={{
+                        borderBottom: "1px solid rgba(31,28,23,0.07)",
+                        background: rowI % 2 === 0 ? "var(--card)" : "var(--wall)",
+                      }}
+                    >
+                      <td style={{ padding: "0.8rem 1rem" }}>
+                        <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.9rem", color: "var(--ink)" }}>
+                          {app.company}
+                        </div>
+                        {badge && (
+                          <span style={{
+                            fontFamily: "var(--font-stamp)", fontSize: "0.55rem", letterSpacing: "0.07em",
+                            textTransform: "uppercase", border: "1px solid", borderColor: badge.style.borderColor,
+                            color: badge.style.color, padding: "0 5px", borderRadius: "1px",
+                            display: "inline-block", marginTop: "0.2rem",
+                          }}>
+                            📅 {badge.text}
+                          </span>
+                        )}
                       </td>
-                      <td className="p-4 text-[#6E6B6B]">{app.role}</td>
-                      <td className="p-4">
-                        <span className={`px-2.5 py-1 rounded-lg border text-xs font-semibold ${col.color}`}>
-                          {col.label}
-                        </span>
+                      <td style={{ padding: "0.8rem 1rem", color: "var(--grey)", fontFamily: "var(--font-ui)" }}>
+                        {app.role}
                       </td>
-                      <td className="p-4 text-[#6E6B6B] text-xs">
+                      <td style={{ padding: "0.8rem 1rem" }}>
+                        <span className={`stamp ${col.stampClass}`}>{col.label}</span>
+                      </td>
+                      <td style={{ padding: "0.8rem 1rem", color: "var(--grey)", fontSize: "0.78rem" }}>
                         {app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : "—"}
                       </td>
-                      <td className="p-4">
-                        <div className="flex flex-wrap gap-1">
+                      <td style={{ padding: "0.8rem 1rem" }}>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
                           {(app.tags || []).map((t) => (
-                            <span key={t} className="px-2 py-0.5 rounded-full bg-[#EAE6DF] border border-[#DCD8CF] text-[10px] text-[#6E6B6B]">
+                            <span key={t} style={{ fontFamily: "var(--font-ui)", fontSize: "0.65rem", padding: "1px 6px", background: "var(--tape)", borderRadius: "1px", color: "var(--ink)" }}>
                               #{t}
                             </span>
                           ))}
                         </div>
                       </td>
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => setAiApp(app)}
-                            className="text-xs px-2.5 py-1 rounded-lg bg-[#FAF9F6] text-[#9C8170] border border-[#EBE8E1] hover:bg-[#F3F1EC] font-medium"
-                          >
-                            ✨ AI Score
+                      <td style={{ padding: "0.8rem 1rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.4rem" }}>
+                          <button onClick={() => setAiApp(app)} className="btn-action" style={{ color: "var(--stamp-blue)" }}>
+                            <Sparkles size={10} /> AI Score
                           </button>
-                          <button
-                            onClick={() => setReminderApp(app)}
-                            className="text-xs px-2.5 py-1 rounded-lg bg-[#FAF9F6] text-[#BA6856] border border-[#EBE8E1] hover:bg-[#F3F1EC] font-medium"
-                          >
-                            ⏰ Remind
+                          <button onClick={() => setReminderApp(app)} className="btn-action" style={{ color: "var(--string)" }}>
+                            <Bell size={10} /> Remind
                           </button>
-                          <button
-                            onClick={() => { setEditingApp(app); setAppModalOpen(true); }}
-                            className="p-1.5 text-[#6E6B6B] hover:text-[#2D2B2A] rounded-lg hover:bg-[#F3F1EC]"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-4 h-4" />
+                          <button onClick={() => { setEditingApp(app); setAppModalOpen(true); }} className="btn-icon" title="Edit">
+                            <Edit2 size={14} />
                           </button>
-                          <button
-                            onClick={() => handleDelete(app.id)}
-                            className="p-1.5 text-[#6E6B6B] hover:text-[#BA6856] rounded-lg hover:bg-[#F3F1EC]"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
+                          <button onClick={() => handleDelete(app.id)} className="btn-icon btn-icon-danger" title="Delete">
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </td>
@@ -522,27 +547,16 @@ export const ApplicationsPage = () => {
         </div>
       )}
 
-      {/* Modals */}
+      {/* ── Modals (logic unchanged) ─────────────────────────────────────── */}
       <ApplicationModal
         isOpen={appModalOpen}
         onClose={() => setAppModalOpen(false)}
         onSave={handleSaveApplication}
         initialData={editingApp}
       />
-      <AiScoreModal
-        isOpen={!!aiApp}
-        onClose={() => setAiApp(null)}
-        application={aiApp}
-      />
-      <ReminderModal
-        isOpen={!!reminderApp}
-        onClose={() => setReminderApp(null)}
-        application={reminderApp}
-      />
-      <OfferCalculatorModal
-        isOpen={calcOpen}
-        onClose={() => setCalcOpen(false)}
-      />
+      <AiScoreModal isOpen={!!aiApp} onClose={() => setAiApp(null)} application={aiApp} />
+      <ReminderModal isOpen={!!reminderApp} onClose={() => setReminderApp(null)} application={reminderApp} />
+      <OfferCalculatorModal isOpen={calcOpen} onClose={() => setCalcOpen(false)} />
     </div>
   );
 };

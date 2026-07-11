@@ -1,12 +1,21 @@
 // src/pages/AuthPage.jsx
 //
-// Login / Register page styled with the Rough White Elegance plaster theme.
-// All text is dark (#2D2B2A) for readability on light background.
+// Sign In / Create Account — pinned index card on plaster wall background.
+// All logic, fields, and validation unchanged.
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Sparkles, ArrowRight, Lock, Mail, User, AlertCircle } from "lucide-react";
+import { ArrowRight, Mail, Lock, User, AlertCircle } from "lucide-react";
+
+// Tiny SVG pin logo for the auth card header
+const PinLogo = () => (
+  <svg width="22" height="26" viewBox="0 0 22 26" fill="none" aria-hidden="true">
+    <ellipse cx="11" cy="9" rx="9" ry="9" fill="#B23A2F" />
+    <ellipse cx="11" cy="8" rx="5" ry="5" fill="rgba(255,255,255,0.2)" />
+    <rect x="10" y="17" width="2.5" height="9" rx="1.25" fill="#8A7060" />
+  </svg>
+);
 
 export const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -46,150 +55,297 @@ export const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F6F3] flex items-center justify-center p-4"
-      style={{
-        backgroundImage: "radial-gradient(#EAE6DF 1px, transparent 1px)",
-        backgroundSize: "24px 24px",
-      }}
+    <div
+      className="min-h-screen flex flex-col items-center justify-center p-4"
+      style={{ background: "var(--wall)" }}
     >
-      <div className="w-full max-w-md">
-        {/* Brand Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#FAF9F6] border border-[#EBE8E1] shadow-[0_4px_20px_rgba(0,0,0,0.06)] mb-5">
-            <Sparkles className="w-7 h-7 text-[#9C8170]" />
-          </div>
-          <h1 className="text-3xl font-extrabold text-[#2D2B2A] tracking-tight">
-            Welcome to HireIQ
-          </h1>
-          <p className="text-[#6E6B6B] text-sm mt-1.5">
-            Track applications, score resumes with AI, and land your dream role.
-          </p>
+      {/* Brand mark above card */}
+      <div className="flex items-center gap-2.5 mb-8">
+        <PinLogo />
+        <span
+          style={{
+            fontFamily: "var(--font-display)",
+            fontWeight: 900,
+            fontSize: "1.6rem",
+            color: "var(--ink)",
+            letterSpacing: "-0.02em",
+          }}
+        >
+          HireIQ
+        </span>
+      </div>
+
+      {/* Pinned index card — no rotation on auth */}
+      <div
+        className="cork-card-flat w-full"
+        style={{ maxWidth: 420 }}
+      >
+        {/* Heading */}
+        <h1
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "1.5rem",
+            fontWeight: 700,
+            color: "var(--ink)",
+            marginBottom: "0.25rem",
+            textAlign: "center",
+          }}
+        >
+          {isLogin ? "Welcome back" : "Create your account"}
+        </h1>
+        <p
+          style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: "0.8rem",
+            color: "var(--grey)",
+            textAlign: "center",
+            marginBottom: "1.5rem",
+          }}
+        >
+          Track applications, score resumes with AI, and land your dream role.
+        </p>
+
+        {/* Tab toggle */}
+        <div
+          style={{
+            display: "flex",
+            background: "var(--wall-2)",
+            borderRadius: "2px",
+            padding: "3px",
+            marginBottom: "1.25rem",
+            border: "1px solid rgba(31,28,23,0.12)",
+          }}
+        >
+          {[
+            { label: "Sign In", toLogin: true },
+            { label: "Create Account", toLogin: false },
+          ].map(({ label, toLogin }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => switchMode(toLogin)}
+              style={{
+                flex: 1,
+                padding: "0.5rem",
+                fontSize: "0.8125rem",
+                fontFamily: "var(--font-ui)",
+                fontWeight: isLogin === toLogin ? 600 : 400,
+                color: isLogin === toLogin ? "var(--ink)" : "var(--grey)",
+                background: isLogin === toLogin ? "var(--card)" : "transparent",
+                border: "none",
+                borderRadius: "1px",
+                boxShadow: isLogin === toLogin ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        {/* Card */}
-        <div className="bg-[#FAF9F6] border border-[#EBE8E1] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.06)] p-8">
-
-          {/* Tab Toggle */}
-          <div className="flex bg-[#F3F1EC] p-1 rounded-xl mb-6 border border-[#E5E1D8]">
-            <button
-              type="button"
-              onClick={() => switchMode(true)}
-              className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
-                isLogin
-                  ? "bg-[#FAF9F6] text-[#2D2B2A] shadow-sm border border-[#EBE8E1]"
-                  : "text-[#6E6B6B] hover:text-[#2D2B2A]"
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMode(false)}
-              className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
-                !isLogin
-                  ? "bg-[#FAF9F6] text-[#2D2B2A] shadow-sm border border-[#EBE8E1]"
-                  : "text-[#6E6B6B] hover:text-[#2D2B2A]"
-              }`}
-            >
-              Create Account
-            </button>
+        {/* Error alert */}
+        {error && (
+          <div
+            style={{
+              background: "rgba(178,58,47,0.08)",
+              border: "1px solid rgba(178,58,47,0.3)",
+              borderRadius: "2px",
+              padding: "0.65rem 0.875rem",
+              marginBottom: "1rem",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "0.5rem",
+              color: "var(--string)",
+              fontSize: "0.8rem",
+              fontFamily: "var(--font-ui)",
+            }}
+          >
+            <AlertCircle size={15} style={{ marginTop: 1, flexShrink: 0 }} />
+            <span>{error}</span>
           </div>
+        )}
 
-          {/* Error Alert */}
-          {error && (
-            <div className="mb-5 p-3.5 rounded-xl bg-[#FDF2F0] border border-[#E8B8B0] text-[#BA6856] text-sm flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{error}</span>
+        {/* Form */}
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          {/* Name — register only */}
+          {!isLogin && (
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "var(--grey)",
+                  marginBottom: "0.4rem",
+                }}
+              >
+                Full Name
+              </label>
+              <div style={{ position: "relative" }}>
+                <User
+                  size={15}
+                  style={{
+                    position: "absolute",
+                    left: "0.75rem",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "var(--grey)",
+                    pointerEvents: "none",
+                  }}
+                />
+                <input
+                  type="text"
+                  required
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="cork-input"
+                />
+              </div>
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Name — only on register */}
-            {!isLogin && (
-              <div>
-                <label className="block text-xs font-semibold text-[#2D2B2A] uppercase tracking-wider mb-1.5">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <User className="w-4 h-4 text-[#9C8170] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text"
-                    required
-                    placeholder="John Doe"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="glass-input"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Email */}
-            <div>
-              <label className="block text-xs font-semibold text-[#2D2B2A] uppercase tracking-wider mb-1.5">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-[#9C8170] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="email"
-                  required
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="glass-input"
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="block text-xs font-semibold text-[#2D2B2A] uppercase tracking-wider mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-[#9C8170] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="glass-input"
-                />
-              </div>
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="btn-primary w-full flex items-center justify-center gap-2 mt-1 py-3 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+          {/* Email */}
+          <div>
+            <label
+              style={{
+                display: "block",
+                fontFamily: "var(--font-ui)",
+                fontSize: "0.7rem",
+                fontWeight: 600,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--grey)",
+                marginBottom: "0.4rem",
+              }}
             >
-              <span>{submitting ? "Processing…" : isLogin ? "Sign In" : "Create Account"}</span>
-              {!submitting && <ArrowRight className="w-4 h-4" />}
-            </button>
-          </form>
+              Email Address
+            </label>
+            <div style={{ position: "relative" }}>
+              <Mail
+                size={15}
+                style={{
+                  position: "absolute",
+                  left: "0.75rem",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "var(--grey)",
+                  pointerEvents: "none",
+                }}
+              />
+              <input
+                type="email"
+                required
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="cork-input"
+              />
+            </div>
+          </div>
 
-          {/* Switch Mode Footer */}
-          <p className="text-center text-xs text-[#6E6B6B] mt-5">
-            {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-            <button
-              type="button"
-              onClick={() => switchMode(!isLogin)}
-              className="text-[#9C8170] font-semibold hover:text-[#7A6358] hover:underline transition-colors"
+          {/* Password */}
+          <div>
+            <label
+              style={{
+                display: "block",
+                fontFamily: "var(--font-ui)",
+                fontSize: "0.7rem",
+                fontWeight: 600,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--grey)",
+                marginBottom: "0.4rem",
+              }}
             >
-              {isLogin ? "Create one" : "Sign in"}
-            </button>
-          </p>
-        </div>
+              Password
+            </label>
+            <div style={{ position: "relative" }}>
+              <Lock
+                size={15}
+                style={{
+                  position: "absolute",
+                  left: "0.75rem",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "var(--grey)",
+                  pointerEvents: "none",
+                }}
+              />
+              <input
+                type="password"
+                required
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="cork-input"
+              />
+            </div>
+          </div>
 
-        {/* Footer note */}
-        <p className="text-center text-xs text-[#B5A397] mt-6">
-          Your data is private and never shared.
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="btn-cork"
+            style={{ width: "100%", justifyContent: "center", marginTop: "0.25rem", padding: "0.75rem" }}
+          >
+            <span>{submitting ? "Processing…" : isLogin ? "Sign In" : "Create Account"}</span>
+            {!submitting && <ArrowRight size={15} />}
+          </button>
+        </form>
+
+        {/* Switch mode */}
+        <p
+          style={{
+            textAlign: "center",
+            fontSize: "0.78rem",
+            color: "var(--grey)",
+            fontFamily: "var(--font-ui)",
+            marginTop: "1.25rem",
+          }}
+        >
+          {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+          <button
+            type="button"
+            onClick={() => switchMode(!isLogin)}
+            className="btn-string"
+            style={{ fontSize: "0.78rem" }}
+          >
+            {isLogin ? "Create one" : "Sign in"}
+          </button>
+        </p>
+
+        {/* Small handwritten annotation */}
+        <p
+          style={{
+            textAlign: "center",
+            fontFamily: "var(--font-hand)",
+            fontSize: "0.85rem",
+            color: "var(--grey)",
+            marginTop: "0.5rem",
+            opacity: 0.6,
+          }}
+        >
+          your job search, organized ✓
         </p>
       </div>
+
+      <p
+        style={{
+          marginTop: "1.5rem",
+          fontSize: "0.7rem",
+          color: "var(--grey)",
+          fontFamily: "var(--font-ui)",
+          opacity: 0.65,
+        }}
+      >
+        Your data is private and never shared.
+      </p>
     </div>
   );
 };
