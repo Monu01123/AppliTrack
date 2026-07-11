@@ -19,10 +19,14 @@ const PORT = process.env.PORT || 5000;
 
 app.use(helmet());
 
+const rawClientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+const cleanClientUrl = rawClientUrl.endsWith("/") ? rawClientUrl.slice(0, -1) : rawClientUrl;
+
 app.use(
   cors({
     origin: [
-      process.env.CLIENT_URL || "http://localhost:5173",
+      cleanClientUrl,
+      "https://appli-track-seven.vercel.app", // Explicitly allow current Vercel URL
       "http://localhost:5173",
       "http://localhost:3000",
     ],
