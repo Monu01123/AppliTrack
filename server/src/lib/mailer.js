@@ -80,4 +80,43 @@ const sendWeeklyDigestEmail = async ({ to, name, stats }) => {
   });
 };
 
-module.exports = { sendReminderEmail, sendWeeklyDigestEmail };
+const sendVerificationEmail = async ({ to, token }) => {
+  // The backend API URL (usually process.env.API_URL or default to localhost:5000)
+  const apiUrl = process.env.VITE_API_URL || "http://localhost:5000/api";
+  
+  // The link MUST point directly to the backend route so it can verify the token and then redirect.
+  const verificationLink = `${apiUrl}/auth/verify-email?token=${token}`;
+  
+  const subject = "Verify your HireIQ account";
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+      <h2 style="color: #3b82f6;">Welcome to HireIQ! 🎉</h2>
+      <p>Hi there,</p>
+      <p>Please click the button below to verify your email address and activate your account:</p>
+      <a href="${verificationLink}" style="display: inline-block; padding: 10px 20px; color: white; background-color: #3b82f6; text-decoration: none; border-radius: 5px; margin: 20px 0;">Verify Email</a>
+      <p>If you didn't create an account, you can safely ignore this email.</p>
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+      <p style="font-size: 13px; color: #64748b;">HireIQ — AI Job Application Tracker</p>
+    </div>
+  `;
+
+  // Fallback for development if SMTP is not configured
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.log("\n=======================================================");
+    console.log("✉️  MOCK EMAIL SENT (SMTP credentials missing in .env)");
+    console.log(`To: ${to}`);
+    console.log(`Subject: ${subject}`);
+    console.log(`🔗 VERIFICATION LINK: ${verificationLink}`);
+    console.log("=======================================================\n");
+    return true;
+  }
+
+  return transporter.sendMail({
+    from: `"HireIQ" <${process.env.SMTP_USER}>`,
+    to,
+    subject,
+    html,
+  });
+};
+
+module.exports = { sendReminderEmail, sendWeeklyDigestEmail, sendVerificationEmail };

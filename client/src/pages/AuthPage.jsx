@@ -3,9 +3,10 @@
 // Editorial Corkboard Desk — Award-Winning Sign In & Create Account Showcase.
 // All authentication logic, form fields, state, and validation 100% unchanged.
 
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import api from "../lib/api";
 import { ArrowRight, Mail, Lock, User, AlertCircle, Sparkles, CheckCircle2, Briefcase } from "lucide-react";
 
 // Tiny SVG push-pin icon
@@ -18,37 +19,74 @@ const PushPin = ({ color = "#B23A2F" }) => (
 );
 
 export const AuthPage = () => {
+  const [searchParams] = useSearchParams();
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName]         = useState("");
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
 
-  const { login, register } = useAuth();
-  const navigate            = useNavigate();
+  useEffect(() => {
+    if (searchParams.get("verified") === "true") {
+      setSuccessMsg("Email verified! You can now log in.");
+      setIsLogin(true);
+    }
+  }, [searchParams]);
+
+  const [errorCode, setErrorCode] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [resendStatus, setResendStatus] = useState("");
+
+  const { user, login, register } = useAuth();
+  const navigate = useNavigate();
+
+  // If user is already logged in, redirect them to the dashboard!
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setErrorCode("");
+    setResendStatus("");
     setSubmitting(true);
     try {
       if (isLogin) {
         await login(email, password);
+        navigate("/");
       } else {
         await register(name, email, password);
+        setRegistrationSuccess(true);
       }
-      navigate("/");
     } catch (err) {
       setError(err.response?.data?.error || "Authentication failed. Please try again.");
+      setErrorCode(err.response?.data?.code || "");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    try {
+      setResendStatus("Sending...");
+      await api.post("/auth/resend-verification", { email });
+      setResendStatus("Email sent!");
+    } catch (err) {
+      setResendStatus(err.response?.data?.error || "Failed to resend.");
     }
   };
 
   const switchMode = (toLogin) => {
     setIsLogin(toLogin);
     setError("");
+    setErrorCode("");
+    setResendStatus("");
+    setRegistrationSuccess(false);
     setName("");
     setEmail("");
     setPassword("");
@@ -292,6 +330,28 @@ export const AuthPage = () => {
               ))}
             </div>
 
+            {/* Success Toast */}
+            {successMsg && (
+              <div
+                style={{
+                  background: "rgba(34,197,94,0.08)",
+                  border: "1px solid rgba(34,197,94,0.35)",
+                  borderRadius: 2,
+                  padding: "0.65rem 0.85rem",
+                  marginBottom: "1.25rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  color: "#15803d",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: "0.8rem",
+                }}
+              >
+                <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
+                <span>{successMsg}</span>
+              </div>
+            )}
+
             {/* Error Alert */}
             {error && (
               <div
@@ -310,15 +370,68 @@ export const AuthPage = () => {
                 }}
               >
                 <AlertCircle size={16} style={{ flexShrink: 0 }} />
-                <span>{error}</span>
+                <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                  <span>{error}</span>
+                  {errorCode === "EMAIL_NOT_VERIFIED" && (
+                    <button
+                      type="button"
+                      onClick={handleResendVerification}
+                      disabled={resendStatus === "Sending..."}
+                      style={{
+                        alignSelf: "flex-start",
+                        background: "var(--string)",
+                        color: "white",
+                        border: "none",
+                        padding: "4px 8px",
+                        fontSize: "0.7rem",
+                        borderRadius: "2px",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {resendStatus || "Resend Verification Email"}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.1rem" }}>
-              {/* Full Name — Signup Only */}
-              {!isLogin && (
-                <div>
+            {/* Registration Success Message */}
+            {registrationSuccess ? (
+              <div style={{ textAlign: "center", padding: "2rem 1rem" }}>
+                <Mail size={48} color="var(--string)" style={{ margin: "0 auto 1rem", opacity: 0.8 }} />
+                <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem", color: "var(--ink)", marginBottom: "0.5rem" }}>
+                  Check your inbox!
+                </h3>
+                <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.85rem", color: "var(--grey)", marginBottom: "1.5rem" }}>
+                  We've sent a verification link to <strong>{email}</strong>. Please click the link to activate your account.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => switchMode(true)}
+                  style={{
+                    background: "var(--ink)",
+                    color: "#fff",
+                    border: "none",
+                    padding: "0.6rem 1.25rem",
+                    fontFamily: "var(--font-ui)",
+                    fontWeight: 600,
+                    fontSize: "0.85rem",
+                    cursor: "pointer",
+                    boxShadow: "3px 3px 0 rgba(0,0,0,0.15)",
+                  }}
+                >
+                  Back to Sign In
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Form */}
+                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.1rem" }}>
+                {/* Full Name — Signup Only */}
+                {!isLogin && (
+                  <div>
                   <label
                     style={{
                       display: "block",
@@ -475,6 +588,8 @@ export const AuthPage = () => {
                 {isLogin ? "Create account" : "Sign in here"}
               </button>
             </div>
+            </>
+            )}
           </div>
         </div>
       </div>

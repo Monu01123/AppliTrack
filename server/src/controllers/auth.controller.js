@@ -6,7 +6,12 @@
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const prisma = require("../lib/prisma");
+const { sendVerificationEmail } = require("../lib/mailer");
+
+// In-memory rate limit map for resend verification
+const resendRateLimits = new Map();
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -59,30 +64,110 @@ const register = async (req, res, next) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+
     // Create the user in the database
     const user = await prisma.user.create({
-      data: { name, email, password: hashedPassword },
+      data: { 
+        name, 
+        email, 
+        password: hashedPassword,
+        verificationToken,
+      },
     });
 
-    // Generate both tokens
-    // Generate both tokens
-    const accessToken = generateAccessToken(user.id);
-    const refreshToken = generateRefreshToken(user.id, user.tokenVersion || 0);
+    // Send verification email
+    await sendVerificationEmail({
+      to: user.email,
+      token: verificationToken
+    });
 
-    // Send refresh token as cookie (httpOnly — invisible to JS)
-    sendRefreshTokenCookie(res, refreshToken);
-
-    // Send access token in response body — frontend stores this in memory
+    // Send success response WITHOUT issuing JWT
     res.status(201).json({
-      accessToken,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
+      message: "Registration successful. Please check your email to verify your account."
     });
   } catch (err) {
     next(err); // Forward any unexpected errors to the global error handler
+  }
+};
+
+// ─── VERIFY EMAIL ─────────────────────────────────────────────────────────────
+// GET /api/auth/verify-email?token=xxx
+
+const verifyEmail = async (req, res, next) => {
+  try {
+    const { token } = req.query;
+    
+    if (!token) {
+      return res.status(400).json({ error: "Verification token is required" });
+    }
+
+    const user = await prisma.user.findFirst({
+      where: { verificationToken: token }
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: "Invalid or expired verification token" });
+    }
+
+    // Mark as verified and clear token
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isVerified: true,
+        verificationToken: null,
+      }
+    });
+
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    res.redirect(`${clientUrl}/login?verified=true`);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ─── RESEND VERIFICATION ──────────────────────────────────────────────────────
+// POST /api/auth/resend-verification
+
+const resendVerification = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Email is required" });
+
+    // Rate limiting: 10 minutes (600,000 ms)
+    const lastSent = resendRateLimits.get(email);
+    if (lastSent && Date.now() - lastSent < 600000) {
+      return res.status(429).json({ error: "Please wait before requesting another email." });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(400).json({ error: "User not found" });
+    }
+    if (user.isVerified) {
+      return res.status(400).json({ error: "Email is already verified" });
+    }
+
+    // Generate new token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { verificationToken }
+    });
+
+    await sendVerificationEmail({
+      to: user.email,
+      token: verificationToken
+    });
+
+    // Update rate limit cache
+    resendRateLimits.set(email, Date.now());
+
+    res.json({ message: "Verification email resent successfully." });
+  } catch (err) {
+    next(err);
   }
 };
 
@@ -102,6 +187,13 @@ const login = async (req, res, next) => {
     // to attackers — they could enumerate which emails are registered.
     if (!user) {
       return res.status(401).json({ error: "Invalid email or password" });
+    }
+
+    if (!user.isVerified) {
+      return res.status(403).json({ 
+        code: "EMAIL_NOT_VERIFIED", 
+        error: "Please verify your email first." 
+      });
     }
 
     // Compare the plaintext password against the stored hash
@@ -192,4 +284,4 @@ const logout = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, refresh, logout };
+module.exports = { register, login, refresh, logout, verifyEmail, resendVerification };

@@ -73,10 +73,7 @@ export const AuthProvider = ({ children }) => {
   // ─── REGISTER FUNCTION ───────────────────────────────────────────────────────
   const register = async (name, email, password) => {
     const res = await api.post("/auth/register", { name, email, password });
-    setAccessToken(res.data.accessToken);
-    setUser(res.data.user);
-    localStorage.setItem("hireiq_token", res.data.accessToken);
-    localStorage.setItem("hireiq_user", JSON.stringify(res.data.user));
+    // Do NOT automatically log in or save tokens. Wait for email verification.
     return res.data;
   };
 

@@ -18,7 +18,7 @@ const authLimiter = rateLimit({
   message: { error: "Too many authentication attempts. Please try again in 15 minutes." },
 });
 
-const { register, login, refresh, logout } = require("../controllers/auth.controller");
+const { register, login, refresh, logout, verifyEmail, resendVerification } = require("../controllers/auth.controller");
 const { validate, registerSchema, loginSchema } = require("../middleware/validate");
 
 // POST /api/auth/register
@@ -35,6 +35,13 @@ router.post("/refresh", refresh);
 
 // POST /api/auth/logout
 router.post("/logout", logout);
+
+// GET /api/auth/verify-email
+// User clicks this link from their email
+router.get("/verify-email", verifyEmail);
+
+// POST /api/auth/resend-verification
+router.post("/resend-verification", authLimiter, resendVerification);
 
 const verifyToken = require("../middleware/verifyToken");
 const {

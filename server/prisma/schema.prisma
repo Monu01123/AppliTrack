@@ -41,6 +41,10 @@ model User {
   name         String
   email        String        @unique               // @unique = no two users share an email
   password     String                              // will store bcrypt hash, never plaintext
+  
+  // Email Verification
+  isVerified        Boolean  @default(false)
+  verificationToken String?
   reminderOn           Boolean       @default(true)
   reminderDays         Int           @default(7)
   publicProfileEnabled Boolean       @default(false)
