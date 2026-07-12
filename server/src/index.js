@@ -13,6 +13,10 @@ const errorHandler = require("./middleware/errorHandler");
 
 // ─── 4. INIT APP ─────────────────────────────────────────────────────────────
 const app = express();
+
+// Trust reverse proxies (Nginx/Vercel) so rate-limiter doesn't crash
+app.set("trust proxy", 1);
+
 const PORT = process.env.PORT || 5000;
 
 // ─── 5. SECURITY MIDDLEWARE ──────────────────────────────────────────────────
