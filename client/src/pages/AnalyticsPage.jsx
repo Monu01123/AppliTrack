@@ -213,7 +213,7 @@ export const AnalyticsPage = () => {
       </div>
 
       {/* ── Charts Grid ─────────────────────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(420px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
         {/* Donut chart */}
         <div className="cork-card-flat">
           <div style={{ marginBottom: "1rem" }}>
@@ -266,8 +266,8 @@ export const AnalyticsPage = () => {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <XAxis dataKey="name" stroke="var(--grey)" fontSize={10} fontFamily="var(--font-stamp)" />
+                <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                  <XAxis dataKey="name" stroke="var(--grey)" fontSize={10} fontFamily="var(--font-stamp)" interval={0} angle={-35} textAnchor="end" height={60} />
                   <YAxis stroke="var(--grey)" fontSize={10} allowDecimals={false} />
                   <Tooltip contentStyle={tooltipStyle} />
                   <Bar dataKey="value" radius={[2, 2, 0, 0]}>
