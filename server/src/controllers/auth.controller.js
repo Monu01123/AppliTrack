@@ -40,7 +40,7 @@ const generateRefreshToken = (userId, tokenVersion = 0) => {
 const sendRefreshTokenCookie = (res, token) => {
   res.cookie("refreshToken", token, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/api/auth",
     maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -238,7 +238,11 @@ const refresh = async (req, res, next) => {
 
     // Check that user exists and token version matches current tokenVersion
     if (!user || decoded.tokenVersion !== user.tokenVersion) {
-      res.clearCookie("refreshToken", { path: "/api/auth" });
+      res.clearCookie("refreshToken", { 
+        path: "/api/auth",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        secure: process.env.NODE_ENV === "production"
+      });
       return res.status(401).json({ error: "Session revoked or expired" });
     }
 
