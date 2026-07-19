@@ -38,8 +38,10 @@ const sendReminderEmail = async ({ to, company, role, appliedAt }) => {
 
   return transporter.sendMail({
     from: `"HireIQ Reminders" <${process.env.SMTP_USER}>`,
+    replyTo: process.env.SMTP_USER,
     to,
     subject,
+    text: `Hi there,\n\nIt has been 7 days since you applied for the ${role} role at ${company}.\n\nFollowing up within a week can increase your chances of getting an interview by up to 30%!\n\nHireIQ — AI Job Application Tracker`,
     html,
   });
 };
@@ -74,8 +76,10 @@ const sendWeeklyDigestEmail = async ({ to, name, stats }) => {
 
   return transporter.sendMail({
     from: `"HireIQ Digest" <${process.env.SMTP_USER}>`,
+    replyTo: process.env.SMTP_USER,
     to,
     subject,
+    text: `Hi ${name || "there"},\n\nHere is your job application performance summary for the past 7 days:\n\nTotal Applications: ${stats.total}\nApplied This Week: ${stats.newThisWeek}\nActive Interviews: ${stats.interviews}\nOffers Received: ${stats.offers}\n\nKeep the momentum going! Log in to HireIQ to track upcoming interviews and follow-ups.`,
     html,
   });
 };
@@ -113,8 +117,10 @@ const sendVerificationEmail = async ({ to, token }) => {
 
   return transporter.sendMail({
     from: `"HireIQ" <${process.env.SMTP_USER}>`,
+    replyTo: process.env.SMTP_USER,
     to,
     subject,
+    text: `Hi there,\n\nPlease go to the following link to verify your email address and activate your account:\n\n${verificationLink}\n\nIf you didn't create an account, you can safely ignore this email.\n\nHireIQ — AI Job Application Tracker`,
     html,
   });
 };

@@ -14,7 +14,7 @@ const getApplications = async (req, res, next) => {
       sort = "appliedAt",   // which column to sort by
       order = "desc",       // sort direction
       page = 1,             // current page
-      limit = 10,           // items per page
+      limit = 500,          // items per page (default to a high number for the Kanban board)
       tag,                  // optional tag filter
     } = req.query;
 
@@ -36,7 +36,7 @@ const getApplications = async (req, res, next) => {
     const ALLOWED_SORT_COLUMNS = ["appliedAt", "company", "role", "status", "updatedAt"];
     const safeSort = ALLOWED_SORT_COLUMNS.includes(sort) ? sort : "appliedAt";
     const safeOrder = order?.toString().toLowerCase() === "asc" ? "asc" : "desc";
-    const safeLimit = Math.min(Math.max(1, Number(limit) || 10), 100); // Max 100 per page
+    const safeLimit = Math.min(Math.max(1, Number(limit) || 500), 500); // Max 500 per page
     const safePage = Math.max(1, Number(page) || 1);
 
     const [applications, total] = await Promise.all([
