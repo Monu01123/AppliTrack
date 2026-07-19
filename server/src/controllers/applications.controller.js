@@ -90,6 +90,9 @@ const createApplication = async (req, res, next) => {
         // Only link resume if resumeId was provided (it's optional)
         ...(resumeId ? { resumeId } : {}),
       },
+      include: {
+        resume: { select: { id: true, label: true } },
+      },
     });
 
     res.status(201).json(application); // 201 Created
@@ -116,6 +119,7 @@ const getApplication = async (req, res, next) => {
         stages: {
           orderBy: { roundOrder: "asc" },
         },
+        resume: { select: { id: true, label: true } },
       },
     });
 
