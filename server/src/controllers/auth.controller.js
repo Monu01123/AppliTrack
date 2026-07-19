@@ -43,7 +43,8 @@ const sendRefreshTokenCookie = (res, token) => {
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/api/auth",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Explicitly tell the browser NOT to delete on exit
   });
 };
 
