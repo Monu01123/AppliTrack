@@ -1,10 +1,10 @@
 // src/components/ApplicationModal.jsx
 //
 // Add / Edit Application modal — corkboard design system.
-// All fields, validation, and submit logic are 100% unchanged.
+// Users can attach a resume PDF/DOCX directly in this form.
 
-import React, { useState, useEffect } from "react";
-import { X, Briefcase, Building2, FileText } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { X, Briefcase, Building2, FileText, Upload, Loader2 } from "lucide-react";
 import { InterviewStagesTimeline } from "./InterviewStagesTimeline";
 import api from "../lib/api";
 
@@ -28,10 +28,15 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
   const [tags, setTags]               = useState([]);
   const [tagInput, setTagInput]       = useState("");
   const [interviewDate, setInterviewDate] = useState("");
-  const [resumeId, setResumeId]       = useState("");
-  const [savedResumes, setSavedResumes] = useState([]);
+
+  // Resume state — user can upload a new file OR keep the existing one
+  const [resumeFile, setResumeFile]         = useState(null);  // new file to upload
+  const [existingResume, setExistingResume] = useState(null);  // already linked resume { id, label }
+  const [uploadingResume, setUploadingResume] = useState(false);
+
   const [submitting, setSubmitting]   = useState(false);
   const [formError, setFormError]     = useState("");
+  const fileInputRef = useRef(null);
 
   const formatDateTimeLocal = (iso) => {
     if (!iso) return "";
@@ -42,9 +47,6 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
   };
 
   useEffect(() => {
-    if (isOpen) {
-      api.get("/resumes").then((res) => setSavedResumes(res.data || [])).catch(() => {});
-    }
     if (initialData) {
       setCompany(initialData.company || "");
       setRole(initialData.role || "");
@@ -53,12 +55,15 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
       setNotes(initialData.notes || "");
       setTags(initialData.tags || []);
       setInterviewDate(formatDateTimeLocal(initialData.interviewDate));
-      setResumeId(initialData.resume?.id || "");
+      setExistingResume(initialData.resume || null);
     } else {
       setCompany(""); setRole(""); setStatus("APPLIED");
-      setJdText(""); setNotes(""); setTags([]); setInterviewDate(""); setResumeId("");
+      setJdText(""); setNotes(""); setTags([]); setInterviewDate("");
+      setExistingResume(null);
     }
+    setResumeFile(null);
     setTagInput(""); setFormError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }, [initialData, isOpen]);
 
   useEffect(() => {
@@ -79,13 +84,42 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
     e.preventDefault();
     setSubmitting(true);
     setFormError("");
+
     try {
-      await onSave({ company, role, status, jdText, notes, tags, interviewDate: interviewDate || null, resumeId: resumeId || null });
+      let resumeId = existingResume?.id || null;
+
+      // If the user selected a NEW resume file, upload it first
+      if (resumeFile) {
+        setUploadingResume(true);
+        const formData = new FormData();
+        formData.append("resume", resumeFile);
+        // Use company + role as the auto-label so the user doesn't have to type it
+        formData.append("label", `${company.trim() || "Resume"} — ${role.trim() || new Date().toLocaleDateString()}`);
+        try {
+          const res = await api.post("/resumes/upload", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          resumeId = res.data.id;
+        } catch (uploadErr) {
+          setFormError(uploadErr.response?.data?.error || "Resume upload failed. Please try again.");
+          setSubmitting(false);
+          setUploadingResume(false);
+          return;
+        }
+        setUploadingResume(false);
+      }
+
+      await onSave({
+        company, role, status, jdText, notes, tags,
+        interviewDate: interviewDate || null,
+        resumeId,
+      });
       onClose();
     } catch (err) {
       setFormError(err.response?.data?.error || "Failed to save. Please check your inputs.");
     } finally {
       setSubmitting(false);
+      setUploadingResume(false);
     }
   };
 
@@ -188,6 +222,62 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
             />
           </div>
 
+          {/* Resume Upload */}
+          <div>
+            <Label extra={<span style={{ fontFamily: "var(--font-hand)", fontSize: "0.72rem", color: "var(--grey)" }}>optional · PDF or DOCX</span>}>
+              <FileText size={12} style={{ display: "inline", marginRight: 4 }} />Resume
+            </Label>
+
+            {/* Show existing linked resume */}
+            {existingResume && !resumeFile && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0.75rem", background: "rgba(74,124,89,0.07)", border: "1px solid rgba(74,124,89,0.25)", borderRadius: 2, marginBottom: "0.4rem" }}>
+                <FileText size={14} style={{ color: "var(--stamp-green)", flexShrink: 0 }} />
+                <span style={{ fontFamily: "var(--font-ui)", fontSize: "0.8rem", color: "var(--ink)", flex: 1 }}>{existingResume.label}</span>
+                <button
+                  type="button"
+                  onClick={() => setExistingResume(null)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--grey)", fontSize: "0.75rem", fontFamily: "var(--font-ui)" }}
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+
+            {/* File picker area */}
+            <div
+              style={{ border: "2px dashed rgba(31,28,23,0.2)", borderRadius: 3, padding: "0.875rem", textAlign: "center", cursor: "pointer", background: resumeFile ? "rgba(74,124,89,0.06)" : "transparent", transition: "background 0.15s" }}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {resumeFile ? (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
+                  <FileText size={16} style={{ color: "var(--stamp-green)" }} />
+                  <span style={{ fontFamily: "var(--font-ui)", fontSize: "0.82rem", color: "var(--ink)", fontWeight: 600 }}>{resumeFile.name}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setResumeFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--grey)", marginLeft: "0.25rem" }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
+                  <Upload size={14} style={{ color: "var(--grey)" }} />
+                  <span style={{ fontFamily: "var(--font-ui)", fontSize: "0.8rem", color: "var(--grey)" }}>
+                    {existingResume ? "Replace with a new file…" : "Click to attach a resume…"}
+                  </span>
+                </div>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                style={{ display: "none" }}
+                onChange={(e) => { setResumeFile(e.target.files[0] || null); setFormError(""); }}
+              />
+            </div>
+          </div>
+
           {/* Job Description */}
           <div>
             <Label extra={<span style={{ fontFamily: "var(--font-hand)", fontSize: "0.72rem", color: "var(--grey)" }}>needed for AI scoring</span>}>
@@ -205,7 +295,7 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
 
           {/* Tags */}
           <div>
-            <Label>Tags & Labels</Label>
+            <Label>Tags &amp; Labels</Label>
             <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
               <input
                 type="text"
@@ -269,29 +359,6 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
             />
           </div>
 
-          {/* Resume Link (Optional) */}
-          <div>
-            <Label extra={<span style={{ fontFamily: "var(--font-hand)", fontSize: "0.72rem", color: "var(--grey)" }}>optional</span>}>
-              <FileText size={12} style={{ display: "inline", marginRight: 4 }} />Attach Resume
-            </Label>
-            <select
-              value={resumeId}
-              onChange={(e) => setResumeId(e.target.value)}
-              className="cork-input no-icon"
-              style={{ appearance: "none", cursor: "pointer" }}
-            >
-              <option value="">-- No resume attached --</option>
-              {savedResumes.map((r) => (
-                <option key={r.id} value={r.id}>{r.label}</option>
-              ))}
-            </select>
-            {savedResumes.length === 0 && (
-              <p style={{ fontFamily: "var(--font-hand)", fontSize: "0.72rem", color: "var(--grey)", marginTop: "0.3rem" }}>
-                Upload resumes in the Resumes section first.
-              </p>
-            )}
-          </div>
-
           {/* Interview Stages Timeline (edit only) */}
           {initialData?.id && (
             <InterviewStagesTimeline
@@ -305,8 +372,9 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
             <button type="button" onClick={onClose} className="btn-cork-outline">
               Cancel
             </button>
-            <button type="submit" disabled={submitting} className="btn-cork">
-              {submitting ? "Saving…" : initialData ? "Update Application" : "Save Application"}
+            <button type="submit" disabled={submitting} className="btn-cork" style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              {submitting && <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />}
+              {uploadingResume ? "Uploading Resume…" : submitting ? "Saving…" : initialData ? "Update Application" : "Save Application"}
             </button>
           </div>
         </form>

@@ -83,14 +83,6 @@ const uploadResume = async (req, res, next) => {
       return res.status(400).json({ error: "A resume label is required." });
     }
 
-    // Check limit: max 5 resumes per user
-    const count = await prisma.resume.count({ where: { userId: req.userId } });
-    if (count >= 5) {
-      return res.status(400).json({
-        error: "Maximum 5 resumes allowed. Please delete an older one first.",
-      });
-    }
-
     // 1. Extract plain text from the file buffer for AI scoring
     let extractedText;
     try {
