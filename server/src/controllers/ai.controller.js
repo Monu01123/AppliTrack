@@ -31,7 +31,10 @@ const scoreResume = async (req, res, next) => {
       });
     }
 
-    const application = await prisma.application.findFirst({ where: { id, userId: req.userId, deletedAt: null } });
+    const application = await prisma.application.findFirst({
+      where: { id, userId: req.userId, deletedAt: null },
+      include: { resume: { select: { extractedText: true, label: true } } },
+    });
     if (!application) {
       return res.status(404).json({ error: "Application not found" });
     }
@@ -39,6 +42,15 @@ const scoreResume = async (req, res, next) => {
     const jobDescription = jdText || application.jdText;
     if (!jobDescription) {
       return res.status(400).json({ error: "Job description is required to score resume" });
+    }
+
+    // Auto-use the linked resume's extracted text.
+    // If the user manually passed resumeText in the request body, use that as an override.
+    const resumeText = req.body.resumeText || application.resume?.extractedText;
+    if (!resumeText) {
+      return res.status(400).json({
+        error: "Please edit this application and attach a resume first.",
+      });
     }
 
 

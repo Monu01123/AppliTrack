@@ -49,6 +49,8 @@ const getApplications = async (req, res, next) => {
           stages: {
             orderBy: { roundOrder: "asc" },
           },
+          // Only return id + label — NOT extractedText (performance!)
+          resume: { select: { id: true, label: true } },
         },
       }),
       prisma.application.count({ where }),
@@ -72,19 +74,21 @@ const getApplications = async (req, res, next) => {
 const createApplication = async (req, res, next) => {
   try {
     // Zod already validated req.body, so we trust these values
-    const { company, role, status, jdUrl, jdText, notes, tags, interviewDate } = req.body;
+    const { company, role, status, jdUrl, jdText, notes, tags, interviewDate, resumeId } = req.body;
 
     const application = await prisma.application.create({
       data: {
-        userId: req.userId, // 🔑 links this application to the logged-in user
+        userId: req.userId,
         company,
         role,
-        status,   // Prisma uses the enum — if undefined, defaults to "APPLIED" (from schema)
+        status,
         jdUrl,
         jdText,
         notes,
         tags: tags || [],
         interviewDate: interviewDate ? new Date(interviewDate) : null,
+        // Only link resume if resumeId was provided (it's optional)
+        ...(resumeId ? { resumeId } : {}),
       },
     });
 
@@ -150,12 +154,13 @@ const updateApplication = async (req, res, next) => {
         ? new Date(updateData.interviewDate)
         : null;
     }
+    // Allow explicitly unlinking a resume by passing resumeId: null
+    if (updateData.resumeId === "") updateData.resumeId = null;
 
-    // Update only the fields present in req.body
-    // Prisma ignores keys that aren't in your schema, so req.body is safe here
     const updated = await prisma.application.update({
       where: { id },
       data: updateData,
+      include: { resume: { select: { id: true, label: true } } },
     });
 
     res.json(updated);

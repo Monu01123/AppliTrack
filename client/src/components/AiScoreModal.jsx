@@ -1,84 +1,50 @@
 // src/components/AiScoreModal.jsx
 //
-// Modal that sends Resume Text + Job Description to Gemini AI for instant scoring.
+// Modal that scores a resume against a Job Description using Gemini AI.
+// If the application has a linked resume, it is used automatically.
+// No more manual paste needed!
 
 import React, { useState } from "react";
-import { X, Sparkles, CheckCircle2, AlertCircle, Award } from "lucide-react";
+import { X, Sparkles, CheckCircle2, AlertCircle, Award, FileText } from "lucide-react";
 import api from "../lib/api";
 
 export const AiScoreModal = ({ isOpen, onClose, application }) => {
-  const [resumeText, setResumeText] = useState("");
   const [loading, setLoading] = useState(false);
   const [scoreResult, setScoreResult] = useState(null);
   const [error, setError] = useState("");
 
-  // Resume Version Manager State
-  const [savedResumes, setSavedResumes] = useState([]);
-  const [selectedResumeId, setSelectedResumeId] = useState("");
-  const [newLabel, setNewLabel] = useState("");
-  const [savingResume, setSavingResume] = useState(false);
-
-  React.useEffect(() => {
-    if (isOpen) {
-      api
-        .get("/resumes")
-        .then((res) => setSavedResumes(res.data || []))
-        .catch((err) => console.error("Error loading resumes:", err));
-    }
-  }, [isOpen]);
-
-  const handleSelectResume = (id) => {
-    setSelectedResumeId(id);
-    if (!id) return;
-    const found = savedResumes.find((r) => r.id === id);
-    if (found) {
-      setResumeText(found.content);
-    }
-  };
-
-  const handleSaveResume = async () => {
-    if (!newLabel.trim() || !resumeText.trim()) {
-      setError("Please enter a label and resume text to save.");
-      return;
-    }
-    setSavingResume(true);
-    setError("");
-    try {
-      const res = await api.post("/resumes", {
-        label: newLabel.trim(),
-        content: resumeText,
-      });
-      setSavedResumes((prev) => [res.data, ...prev]);
-      setSelectedResumeId(res.data.id);
-      setNewLabel("");
-    } catch (err) {
-      setError(err.response?.data?.error || "Failed to save resume version.");
-    } finally {
-      setSavingResume(false);
-    }
-  };
-
   if (!isOpen || !application) return null;
+
+  const linkedResume = application.resume; // { id, label } or null
 
   const handleScore = async (e) => {
     e.preventDefault();
-    if (!resumeText.trim()) {
-      setError("Please paste your resume text to analyze.");
+
+    // Guard: if no resume is linked, show a friendly error — don't even call the API
+    if (!linkedResume) {
+      setError("Please edit this application and attach a resume first.");
       return;
     }
+
     setError("");
     setLoading(true);
     setScoreResult(null);
 
     try {
-      const res = await api.post(`/applications/${application.id}/score`, {
-        resumeText,
-      });
+      // The backend will automatically use the linked resume's extractedText.
+      // We don't need to send resumeText from the frontend anymore!
+      const res = await api.post(`/applications/${application.id}/score`, {});
       const raw = res.data.aiScore || res.data;
       const numericScore = raw.overallScore ?? raw.score ?? 75;
       setScoreResult({
         overallScore: numericScore,
-        verdict: raw.verdict || (numericScore >= 80 ? "Excellent Match" : numericScore >= 60 ? "Good Match" : "Needs Improvement"),
+        verdict:
+          raw.verdict ||
+          (numericScore >= 80
+            ? "Excellent Match"
+            : numericScore >= 60
+            ? "Good Match"
+            : "Needs Improvement"),
         strengths: raw.strengths || raw.matched || [],
         missingSkills: raw.missingSkills || raw.missing || [],
       });
@@ -119,58 +85,23 @@ export const AiScoreModal = ({ isOpen, onClose, application }) => {
               </div>
             )}
 
-            {/* Saved Resumes Dropdown */}
-            {savedResumes.length > 0 && (
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                  Select Saved Resume ({savedResumes.length}/5)
-                </label>
-                <select
-                  value={selectedResumeId}
-                  onChange={(e) => handleSelectResume(e.target.value)}
-                  className="glass-input bg-slate-900 text-sm"
-                >
-                  <option value="">-- Or paste fresh text below --</option>
-                  {savedResumes.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.label} (Saved {new Date(r.createdAt).toLocaleDateString()})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                Resume Text *
-              </label>
-              <textarea
-                rows={6}
-                required
-                placeholder="Paste your plain resume text here..."
-                value={resumeText}
-                onChange={(e) => setResumeText(e.target.value)}
-                className="glass-input text-sm resize-none font-mono"
-              />
-            </div>
-
-            {/* Save Resume Bar */}
-            <div className="flex items-center gap-2 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-              <input
-                type="text"
-                placeholder="Save label (e.g. Fullstack v1)"
-                value={newLabel}
-                onChange={(e) => setNewLabel(e.target.value)}
-                className="glass-input text-xs py-1.5 flex-1"
-              />
-              <button
-                type="button"
-                onClick={handleSaveResume}
-                disabled={savingResume || savedResumes.length >= 5}
-                className="px-3 py-1.5 rounded-lg bg-sky-500/20 border border-sky-500/40 text-sky-300 hover:bg-sky-500/30 text-xs font-medium disabled:opacity-50"
-              >
-                {savingResume ? "Saving..." : "Save Resume"}
-              </button>
+            {/* Resume Status */}
+            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+              <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Linked Resume</p>
+              {linkedResume ? (
+                <div className="flex items-center gap-2 text-emerald-400">
+                  <FileText className="w-4 h-4" />
+                  <span className="text-sm font-medium">{linkedResume.label}</span>
+                  <CheckCircle2 className="w-4 h-4 ml-auto" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-amber-400">
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="text-sm">
+                    No resume attached. Edit this application and attach a resume first.
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
@@ -183,8 +114,8 @@ export const AiScoreModal = ({ isOpen, onClose, application }) => {
               </button>
               <button
                 type="submit"
-                disabled={loading}
-                className="btn-primary flex items-center gap-2 text-sm"
+                disabled={loading || !linkedResume}
+                className="btn-primary flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Sparkles className="w-4 h-4" />
                 <span>{loading ? "Analyzing with Gemini..." : "Calculate AI Match Score"}</span>
@@ -249,7 +180,7 @@ export const AiScoreModal = ({ isOpen, onClose, application }) => {
                 onClick={() => setScoreResult(null)}
                 className="btn-primary text-sm px-6"
               >
-                Test Another Resume
+                Score Again
               </button>
             </div>
           </div>

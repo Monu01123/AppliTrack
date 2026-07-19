@@ -4,8 +4,9 @@
 // All fields, validation, and submit logic are 100% unchanged.
 
 import React, { useState, useEffect } from "react";
-import { X, Briefcase, Building2 } from "lucide-react";
+import { X, Briefcase, Building2, FileText } from "lucide-react";
 import { InterviewStagesTimeline } from "./InterviewStagesTimeline";
+import api from "../lib/api";
 
 const STATUS_OPTIONS = [
   { value: "APPLIED",      label: "Applied"      },
@@ -27,6 +28,8 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
   const [tags, setTags]               = useState([]);
   const [tagInput, setTagInput]       = useState("");
   const [interviewDate, setInterviewDate] = useState("");
+  const [resumeId, setResumeId]       = useState("");
+  const [savedResumes, setSavedResumes] = useState([]);
   const [submitting, setSubmitting]   = useState(false);
   const [formError, setFormError]     = useState("");
 
@@ -39,6 +42,9 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
   };
 
   useEffect(() => {
+    if (isOpen) {
+      api.get("/resumes").then((res) => setSavedResumes(res.data || [])).catch(() => {});
+    }
     if (initialData) {
       setCompany(initialData.company || "");
       setRole(initialData.role || "");
@@ -47,9 +53,10 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
       setNotes(initialData.notes || "");
       setTags(initialData.tags || []);
       setInterviewDate(formatDateTimeLocal(initialData.interviewDate));
+      setResumeId(initialData.resume?.id || "");
     } else {
       setCompany(""); setRole(""); setStatus("APPLIED");
-      setJdText(""); setNotes(""); setTags([]); setInterviewDate("");
+      setJdText(""); setNotes(""); setTags([]); setInterviewDate(""); setResumeId("");
     }
     setTagInput(""); setFormError("");
   }, [initialData, isOpen]);
@@ -73,7 +80,7 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
     setSubmitting(true);
     setFormError("");
     try {
-      await onSave({ company, role, status, jdText, notes, tags, interviewDate: interviewDate || null });
+      await onSave({ company, role, status, jdText, notes, tags, interviewDate: interviewDate || null, resumeId: resumeId || null });
       onClose();
     } catch (err) {
       setFormError(err.response?.data?.error || "Failed to save. Please check your inputs.");
@@ -260,6 +267,29 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
               onChange={(e) => setNotes(e.target.value)}
               className="cork-input no-icon"
             />
+          </div>
+
+          {/* Resume Link (Optional) */}
+          <div>
+            <Label extra={<span style={{ fontFamily: "var(--font-hand)", fontSize: "0.72rem", color: "var(--grey)" }}>optional</span>}>
+              <FileText size={12} style={{ display: "inline", marginRight: 4 }} />Attach Resume
+            </Label>
+            <select
+              value={resumeId}
+              onChange={(e) => setResumeId(e.target.value)}
+              className="cork-input no-icon"
+              style={{ appearance: "none", cursor: "pointer" }}
+            >
+              <option value="">-- No resume attached --</option>
+              {savedResumes.map((r) => (
+                <option key={r.id} value={r.id}>{r.label}</option>
+              ))}
+            </select>
+            {savedResumes.length === 0 && (
+              <p style={{ fontFamily: "var(--font-hand)", fontSize: "0.72rem", color: "var(--grey)", marginTop: "0.3rem" }}>
+                Upload resumes in the Resumes section first.
+              </p>
+            )}
           </div>
 
           {/* Interview Stages Timeline (edit only) */}
