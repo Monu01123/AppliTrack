@@ -14,7 +14,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const scoreResume = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { resumeText, jdText } = req.body;
+    const { jdText } = req.body;
 
     // Enforce 10 AI calls/user/day limit
     const startOfDay = new Date();
