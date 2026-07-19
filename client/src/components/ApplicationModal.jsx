@@ -4,7 +4,7 @@
 // Users can attach a resume PDF/DOCX directly in this form.
 
 import React, { useState, useEffect, useRef } from "react";
-import { X, Briefcase, Building2, FileText, Upload, Loader2 } from "lucide-react";
+import { X, Briefcase, Building2, FileText, Upload, Loader2, Download, Trash2 } from "lucide-react";
 import { InterviewStagesTimeline } from "./InterviewStagesTimeline";
 import api from "../lib/api";
 
@@ -33,10 +33,25 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
   const [resumeFile, setResumeFile]         = useState(null);  // new file to upload
   const [existingResume, setExistingResume] = useState(null);  // already linked resume { id, label }
   const [uploadingResume, setUploadingResume] = useState(false);
+  const [downloadingResume, setDownloadingResume] = useState(false);
 
   const [submitting, setSubmitting]   = useState(false);
   const [formError, setFormError]     = useState("");
   const fileInputRef = useRef(null);
+
+  const handleDownloadResume = async (e) => {
+    e.stopPropagation();
+    if (!existingResume?.id) return;
+    setDownloadingResume(true);
+    try {
+      const res = await api.get(`/resumes/${existingResume.id}/download`);
+      window.open(res.data.url, "_blank");
+    } catch (err) {
+      setFormError("Failed to download resume. Please try again.");
+    } finally {
+      setDownloadingResume(false);
+    }
+  };
 
   const formatDateTimeLocal = (iso) => {
     if (!iso) return "";
@@ -228,54 +243,84 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
               <FileText size={12} style={{ display: "inline", marginRight: 4 }} />Resume
             </Label>
 
-            {/* Show existing linked resume */}
-            {existingResume && !resumeFile && (
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 0.75rem", background: "rgba(74,124,89,0.07)", border: "1px solid rgba(74,124,89,0.25)", borderRadius: 2, marginBottom: "0.4rem" }}>
-                <FileText size={14} style={{ color: "var(--stamp-green)", flexShrink: 0 }} />
-                <span style={{ fontFamily: "var(--font-ui)", fontSize: "0.8rem", color: "var(--ink)", flex: 1 }}>{existingResume.label}</span>
-                <button
-                  type="button"
-                  onClick={() => setExistingResume(null)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--grey)", fontSize: "0.75rem", fontFamily: "var(--font-ui)" }}
-                >
-                  Remove
-                </button>
-              </div>
-            )}
-
-            {/* File picker area */}
-            <div
-              style={{ border: "2px dashed rgba(31,28,23,0.2)", borderRadius: 3, padding: "0.875rem", textAlign: "center", cursor: "pointer", background: resumeFile ? "rgba(74,124,89,0.06)" : "transparent", transition: "background 0.15s" }}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {resumeFile ? (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
-                  <FileText size={16} style={{ color: "var(--stamp-green)" }} />
-                  <span style={{ fontFamily: "var(--font-ui)", fontSize: "0.82rem", color: "var(--ink)", fontWeight: 600 }}>{resumeFile.name}</span>
+            {/* When resume is already attached and user hasn't selected a replacement yet */}
+            {existingResume && !resumeFile ? (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.875rem", background: "rgba(74,124,89,0.08)", border: "1px solid rgba(74,124,89,0.3)", borderRadius: 3 }}>
+                <FileText size={18} style={{ color: "var(--stamp-green)", flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontFamily: "var(--font-display)", fontSize: "0.9rem", fontWeight: 700, color: "var(--ink)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {existingResume.label}
+                  </p>
+                  <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.72rem", color: "var(--stamp-green)", margin: 0 }}>
+                    Attached Resume · PDF / DOCX
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); setResumeFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--grey)", marginLeft: "0.25rem" }}
+                    onClick={handleDownloadResume}
+                    disabled={downloadingResume}
+                    className="btn-cork"
+                    style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", padding: "0.4rem 0.75rem" }}
                   >
-                    ×
+                    {downloadingResume ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Download size={13} />}
+                    Download
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setExistingResume(null); setTimeout(() => fileInputRef.current?.click(), 50); }}
+                    className="btn-cork-outline"
+                    style={{ fontSize: "0.75rem", padding: "0.4rem 0.75rem" }}
+                    title="Replace with another file"
+                  >
+                    Replace
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExistingResume(null)}
+                    className="btn-icon btn-icon-danger"
+                    title="Remove resume"
+                    style={{ padding: "0.4rem" }}
+                  >
+                    <Trash2 size={14} />
                   </button>
                 </div>
-              ) : (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
-                  <Upload size={14} style={{ color: "var(--grey)" }} />
-                  <span style={{ fontFamily: "var(--font-ui)", fontSize: "0.8rem", color: "var(--grey)" }}>
-                    {existingResume ? "Replace with a new file…" : "Click to attach a resume…"}
-                  </span>
-                </div>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                style={{ display: "none" }}
-                onChange={(e) => { setResumeFile(e.target.files[0] || null); setFormError(""); }}
-              />
-            </div>
+              </div>
+            ) : (
+              /* File picker area (shown when no resume is attached or replacing) */
+              <div
+                style={{ border: "2px dashed rgba(31,28,23,0.2)", borderRadius: 3, padding: "0.875rem", textAlign: "center", cursor: "pointer", background: resumeFile ? "rgba(74,124,89,0.06)" : "transparent", transition: "background 0.15s" }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {resumeFile ? (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
+                    <FileText size={16} style={{ color: "var(--stamp-green)" }} />
+                    <span style={{ fontFamily: "var(--font-ui)", fontSize: "0.82rem", color: "var(--ink)", fontWeight: 600 }}>{resumeFile.name}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setResumeFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--grey)", marginLeft: "0.25rem" }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
+                    <Upload size={14} style={{ color: "var(--grey)" }} />
+                    <span style={{ fontFamily: "var(--font-ui)", fontSize: "0.8rem", color: "var(--grey)" }}>
+                      Click to attach a resume (.pdf or .docx)
+                    </span>
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  style={{ display: "none" }}
+                  onChange={(e) => { setResumeFile(e.target.files[0] || null); setFormError(""); }}
+                />
+              </div>
+            )}
           </div>
 
           {/* Job Description */}

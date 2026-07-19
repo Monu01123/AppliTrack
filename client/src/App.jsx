@@ -11,7 +11,6 @@ const AuthPage        = lazy(() => import("./pages/AuthPage").then((m)        =>
 const DashboardPage   = lazy(() => import("./pages/DashboardPage").then((m)   => ({ default: m.DashboardPage })));
 const AnalyticsPage   = lazy(() => import("./pages/AnalyticsPage").then((m)   => ({ default: m.AnalyticsPage })));
 const RemindersPage   = lazy(() => import("./pages/RemindersPage").then((m)   => ({ default: m.RemindersPage })));
-const ResumesPage     = lazy(() => import("./pages/ResumesPage").then((m)     => ({ default: m.ResumesPage })));
 const PublicProfilePage = lazy(() => import("./pages/PublicProfilePage").then((m) => ({ default: m.PublicProfilePage })));
 const ApplicationsPage  = lazy(() => import("./pages/ApplicationsPage").then((m)  => ({ default: m.ApplicationsPage })));
 
@@ -63,14 +62,6 @@ export function App() {
                     element={
                       <ProtectedRoute>
                         <RemindersPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/resumes"
-                    element={
-                      <ProtectedRoute>
-                        <ResumesPage />
                       </ProtectedRoute>
                     }
                   />

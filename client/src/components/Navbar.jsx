@@ -13,7 +13,6 @@ const NAV_LINKS = [
   { to: "/applications", label: "Applications" },
   { to: "/analytics",    label: "Funnel Stats" },
   { to: "/reminders",    label: "Reminders"    },
-  { to: "/resumes",      label: "Resumes"      },
 ];
 
 // Tiny SVG push-pin for the logo
