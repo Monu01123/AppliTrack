@@ -56,100 +56,103 @@ export const AiScoreModal = ({ isOpen, onClose, application }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-      <div className="glass-card w-full max-w-2xl p-6 relative max-h-[90vh] overflow-y-auto">
+    <div
+      role="dialog"
+      aria-modal="true"
+      style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", background: "rgba(31,28,23,0.45)", backdropFilter: "blur(2px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        style={{ background: "var(--card)", borderRadius: 3, boxShadow: "0 20px 60px rgba(0,0,0,0.18)", width: "100%", maxWidth: 600, maxHeight: "90vh", overflowY: "auto", position: "relative", padding: "1.75rem" }}
+      >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+          className="btn-icon"
+          style={{ position: "absolute", top: "1rem", right: "1rem" }}
         >
-          <X className="w-5 h-5" />
+          <X size={18} />
         </button>
 
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center shadow-lg">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1.25rem" }}>
+          <Sparkles size={20} style={{ color: "var(--stamp-blue)" }} />
           <div>
-            <h2 className="text-xl font-bold text-white">AI Resume Matcher</h2>
-            <p className="text-xs text-slate-400">
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.2rem", fontWeight: 700, color: "var(--ink)", margin: 0 }}>
+              AI Resume Matcher
+            </h2>
+            <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.85rem", color: "var(--grey)", margin: "0.2rem 0 0 0" }}>
               Scoring against {application.role} at {application.company}
             </p>
           </div>
         </div>
 
         {!scoreResult ? (
-          <form onSubmit={handleScore} className="space-y-4">
+          <form onSubmit={handleScore} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {error && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm">
+              <div style={{ background: "rgba(178,58,47,0.08)", border: "1px solid rgba(178,58,47,0.25)", borderRadius: 2, padding: "0.6rem 0.875rem", fontFamily: "var(--font-ui)", fontSize: "0.85rem", color: "var(--string)" }}>
                 {error}
               </div>
             )}
 
             {/* Resume Status */}
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-              <p className="text-xs font-semibold text-slate-400 uppercase mb-2">Linked Resume</p>
+            <div style={{ background: "var(--wall)", padding: "1rem", borderRadius: 2, border: "1px solid var(--border)" }}>
+              <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.75rem", fontWeight: 600, color: "var(--grey)", textTransform: "uppercase", marginBottom: "0.5rem" }}>Linked Resume</p>
               {linkedResume ? (
-                <div className="flex items-center gap-2 text-emerald-400">
-                  <FileText className="w-4 h-4" />
-                  <span className="text-sm font-medium">{linkedResume.label}</span>
-                  <CheckCircle2 className="w-4 h-4 ml-auto" />
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--stamp-green)", fontFamily: "var(--font-ui)", fontSize: "0.9rem", fontWeight: 500 }}>
+                  <FileText size={16} />
+                  <span>{linkedResume.label}</span>
+                  <CheckCircle2 size={16} style={{ marginLeft: "auto" }} />
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-amber-400">
-                  <AlertCircle className="w-4 h-4" />
-                  <span className="text-sm">
-                    No resume attached. Edit this application and attach a resume first.
-                  </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--stamp-amber)", fontFamily: "var(--font-ui)", fontSize: "0.9rem" }}>
+                  <AlertCircle size={16} />
+                  <span>No resume attached. Edit this application and attach a resume first.</span>
                 </div>
               )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white"
-              >
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", marginTop: "0.5rem" }}>
+              <button type="button" onClick={onClose} className="btn-action">
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading || !linkedResume}
-                className="btn-primary flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-action"
+                style={{ background: "var(--stamp-blue)", color: "white", borderColor: "var(--stamp-blue)" }}
               >
-                <Sparkles className="w-4 h-4" />
-                <span>{loading ? "Analyzing with Gemini..." : "Calculate AI Match Score"}</span>
+                <Sparkles size={14} style={{ marginRight: "0.4rem" }} />
+                {loading ? "Analyzing with Gemini..." : "Calculate AI Score"}
               </button>
             </div>
           </form>
         ) : (
-          <div className="space-y-6 animate-in fade-in duration-300">
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", animation: "fadeIn 0.3s ease" }}>
             {/* Score Banner */}
-            <div className="p-6 rounded-2xl bg-gradient-to-r from-sky-900/40 to-indigo-900/40 border border-sky-500/30 flex items-center justify-between">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(35, 116, 171, 0.08)", padding: "1.25rem", borderRadius: 3, border: "1px dashed var(--stamp-blue)" }}>
               <div>
-                <p className="text-xs uppercase font-semibold text-sky-400">Match Rating</p>
-                <h3 className="text-2xl font-bold text-white mt-1">
+                <p style={{ fontFamily: "var(--font-ui)", fontSize: "0.75rem", fontWeight: 600, color: "var(--stamp-blue)", textTransform: "uppercase", margin: 0 }}>Match Rating</p>
+                <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1.4rem", fontWeight: 700, color: "var(--ink)", margin: "0.2rem 0 0 0" }}>
                   {scoreResult.verdict}
                 </h3>
               </div>
-              <div className="flex items-center gap-2 bg-slate-950/80 px-4 py-2 rounded-2xl border border-slate-800">
-                <Award className="w-6 h-6 text-amber-400" />
-                <span className="text-3xl font-extrabold text-white">
+              <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", background: "var(--card)", padding: "0.5rem 1rem", borderRadius: 2, border: "1px solid var(--border)", boxShadow: "0 2px 5px rgba(0,0,0,0.05)" }}>
+                <Award size={24} style={{ color: "var(--stamp-amber)" }} />
+                <span style={{ fontFamily: "var(--font-display)", fontSize: "1.75rem", fontWeight: 800, color: "var(--ink)" }}>
                   {scoreResult.overallScore}
                 </span>
-                <span className="text-slate-400 text-sm">/100</span>
+                <span style={{ fontFamily: "var(--font-ui)", fontSize: "0.85rem", color: "var(--grey)", alignSelf: "flex-end", paddingBottom: "0.3rem" }}>/100</span>
               </div>
             </div>
 
             {/* Strengths */}
             {scoreResult.strengths?.length > 0 && (
               <div>
-                <h4 className="text-sm font-semibold text-emerald-400 flex items-center gap-2 mb-2">
-                  <CheckCircle2 className="w-4 h-4" /> Top Strengths
+                <h4 style={{ fontFamily: "var(--font-display)", fontSize: "0.95rem", fontWeight: 700, color: "var(--stamp-green)", display: "flex", alignItems: "center", gap: "0.4rem", margin: "0 0 0.5rem 0" }}>
+                  <CheckCircle2 size={16} /> Top Strengths
                 </h4>
-                <ul className="space-y-1 pl-6 list-disc text-sm text-slate-300">
+                <ul style={{ margin: 0, paddingLeft: "1.5rem", fontFamily: "var(--font-ui)", fontSize: "0.9rem", color: "var(--ink)", lineHeight: 1.5 }}>
                   {scoreResult.strengths.map((str, idx) => (
-                    <li key={idx}>{str}</li>
+                    <li key={idx} style={{ paddingBottom: "0.25rem" }}>{str}</li>
                   ))}
                 </ul>
               </div>
@@ -158,14 +161,14 @@ export const AiScoreModal = ({ isOpen, onClose, application }) => {
             {/* Missing Skills */}
             {scoreResult.missingSkills?.length > 0 && (
               <div>
-                <h4 className="text-sm font-semibold text-amber-400 flex items-center gap-2 mb-2">
-                  <AlertCircle className="w-4 h-4" /> Recommended Keywords / Missing Skills
+                <h4 style={{ fontFamily: "var(--font-display)", fontSize: "0.95rem", fontWeight: 700, color: "var(--stamp-amber)", display: "flex", alignItems: "center", gap: "0.4rem", margin: "0 0 0.5rem 0" }}>
+                  <AlertCircle size={16} /> Recommended Keywords / Missing
                 </h4>
-                <div className="flex flex-wrap gap-2">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
                   {scoreResult.missingSkills.map((skill, idx) => (
                     <span
                       key={idx}
-                      className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium"
+                      style={{ padding: "0.25rem 0.6rem", background: "rgba(224, 159, 62, 0.1)", border: "1px solid rgba(224, 159, 62, 0.3)", borderRadius: 100, fontFamily: "var(--font-ui)", fontSize: "0.8rem", fontWeight: 500, color: "var(--stamp-amber)" }}
                     >
                       {skill}
                     </span>
@@ -174,11 +177,11 @@ export const AiScoreModal = ({ isOpen, onClose, application }) => {
               </div>
             )}
 
-            <div className="flex justify-end pt-4">
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "1rem" }}>
               <button
                 type="button"
                 onClick={() => setScoreResult(null)}
-                className="btn-primary text-sm px-6"
+                className="btn-action"
               >
                 Score Again
               </button>
