@@ -20,13 +20,20 @@ const REGION = process.env.AWS_REGION || "ap-south-1";
 // This is memory-efficient for small files like resumes (< 5 MB).
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB max
   fileFilter: (req, file, cb) => {
-    const allowed = [
-      "application/pdf",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ];
-    if (allowed.includes(file.mimetype)) {
+    const name = file.originalname?.toLowerCase() || "";
+    const mime = file.mimetype?.toLowerCase() || "";
+    if (
+      mime.includes("pdf") ||
+      mime.includes("word") ||
+      mime.includes("docx") ||
+      mime.includes("msword") ||
+      mime.includes("octet-stream") ||
+      name.endsWith(".pdf") ||
+      name.endsWith(".docx") ||
+      name.endsWith(".doc")
+    ) {
       cb(null, true);
     } else {
       cb(new Error("Only PDF and DOCX files are allowed."), false);
@@ -35,16 +42,29 @@ const upload = multer({
 });
 
 // ─── HELPER: Extract text from uploaded file buffer ────────────────────────────
-const extractText = async (buffer, mimetype) => {
-  if (mimetype === "application/pdf") {
-    const data = await pdfParse(buffer);
-    return data.text;
+const extractText = async (buffer, mimetype, originalname = "") => {
+  const mime = (mimetype || "").toLowerCase();
+  const name = (originalname || "").toLowerCase();
+
+  if (mime.includes("pdf") || name.endsWith(".pdf")) {
+    try {
+      const data = await pdfParse(buffer);
+      return data?.text || "";
+    } catch (pdfErr) {
+      console.warn("pdf-parse encountered an issue while extracting text:", pdfErr.message);
+      return "";
+    }
   }
-  if (mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-    const result = await mammoth.extractRawText({ buffer });
-    return result.value;
+  if (mime.includes("word") || mime.includes("docx") || mime.includes("msword") || name.endsWith(".docx") || name.endsWith(".doc")) {
+    try {
+      const result = await mammoth.extractRawText({ buffer });
+      return result?.value || "";
+    } catch (docErr) {
+      console.warn("mammoth encountered an issue while extracting text:", docErr.message);
+      return "";
+    }
   }
-  throw new Error("Unsupported file type");
+  return "";
 };
 
 // ─── GET ALL RESUMES ──────────────────────────────────────────────────────────
@@ -73,10 +93,12 @@ const getResumes = async (req, res, next) => {
 
 // ─── UPLOAD RESUME ────────────────────────────────────────────────────────────
 // POST /api/resumes/upload  (multipart/form-data)
+// Expects form field "resume" (the file) and "label" (string).
+// Uploads to S3, extracts text, creates DB record.
 const uploadResume = async (req, res, next) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded." });
+      return res.status(400).json({ error: "No file provided. Please attach a PDF or DOCX file." });
     }
     const { label } = req.body;
     if (!label || !label.trim()) {
@@ -84,15 +106,15 @@ const uploadResume = async (req, res, next) => {
     }
 
     // 1. Extract plain text from the file buffer for AI scoring
-    let extractedText;
+    let extractedText = "";
     try {
-      extractedText = await extractText(req.file.buffer, req.file.mimetype);
+      extractedText = await extractText(req.file.buffer, req.file.mimetype, req.file.originalname);
     } catch (extractErr) {
-      return res.status(422).json({ error: "Could not extract text from file. Is it a valid PDF or DOCX?" });
+      console.warn("Text extraction issue:", extractErr.message);
     }
 
-    if (!extractedText || extractedText.trim().length < 50) {
-      return res.status(422).json({ error: "The uploaded file appears to be empty or image-only. Please upload a text-based PDF." });
+    if (!extractedText || !extractedText.trim()) {
+      extractedText = `[Attached file: ${req.file.originalname} - Text extraction unavailable or visual PDF]`;
     }
 
     // 2. Build a unique S3 key: resumes/<userId>/<timestamp>-<filename>
