@@ -37,6 +37,7 @@ const applicationSchema = z.object({
   notes: z.string().optional(),
   tags: z.array(z.string()).optional(),
   interviewDate: z.string().optional().nullable(),
+  resumeId: z.string().optional().nullable(),
 });
 
 // Rules for PATCH /api/applications/:id
