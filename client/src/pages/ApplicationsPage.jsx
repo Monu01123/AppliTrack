@@ -28,6 +28,16 @@ const COLUMNS = [
 const ROTATIONS = ["cork-card-r1","cork-card-r2","cork-card-r3","cork-card-r4","cork-card-r5","cork-card-r6"];
 const rotFor = (i) => ROTATIONS[i % ROTATIONS.length];
 
+const getDaysSinceText = (app) => {
+  const dateStr = app.appliedAt || app.createdAt;
+  if (!dateStr) return null;
+  const diffTime = Math.abs(new Date() - new Date(dateStr));
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "Added today";
+  if (diffDays === 1) return "1 day ago";
+  return `${diffDays} days ago`;
+};
+
 export const ApplicationsPage = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -368,8 +378,9 @@ export const ApplicationsPage = () => {
                               {app.role}
                             </p>
                             {app.appliedAt && (
-                              <p style={{ fontFamily: "var(--font-hand)", fontSize: "0.7rem", color: "var(--grey)", margin: "0.15rem 0 0", opacity: 0.7 }}>
+                              <p style={{ fontFamily: "var(--font-hand)", fontSize: "0.7rem", color: "var(--grey)", margin: "0.15rem 0 0", opacity: 0.75 }}>
                                 {new Date(app.appliedAt).toLocaleDateString([], { month: "short", day: "numeric" })}
+                                {getDaysSinceText(app) ? ` (${getDaysSinceText(app)})` : ""}
                               </p>
                             )}
                           </div>
@@ -438,33 +449,39 @@ export const ApplicationsPage = () => {
 
                         {/* Card footer — AI Score + Remind + Resume */}
                         <hr className="cork-divider" />
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: "0.25rem", flexWrap: "wrap" }}>
-                          <button
-                            onClick={() => setAiApp(app)}
-                            className="btn-action"
-                            style={{ color: "var(--stamp-blue)" }}
-                          >
-                            <Sparkles size={10} /> AI Score
-                          </button>
-                          {app.resume?.id && (
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
+                          <span style={{ fontFamily: "var(--font-stamp)", fontSize: "0.62rem", color: "var(--grey)", letterSpacing: "0.04em", display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
+                            ⏱️ {getDaysSinceText(app) || "Recently"}
+                          </span>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", flexShrink: 0 }}>
                             <button
-                              onClick={(e) => handleDownloadResume(app, e)}
-                              disabled={downloadingResumeId === app.resume.id}
-                              className="btn-action"
-                              style={{ color: "var(--stamp-green)", borderColor: "rgba(74,124,89,0.3)", background: "rgba(74,124,89,0.06)" }}
-                              title={`Download attached resume: ${app.resume.label}`}
+                              onClick={() => setAiApp(app)}
+                              className="btn-icon"
+                              style={{ color: "var(--stamp-blue)" }}
+                              title="AI Score & Insights"
                             >
-                              {downloadingResumeId === app.resume.id ? <Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} /> : <Download size={10} />}
-                              Resume
+                              <Sparkles size={14} />
                             </button>
-                          )}
-                          <button
-                            onClick={() => setReminderApp(app)}
-                            className="btn-action"
-                            style={{ color: "var(--string)" }}
-                          >
-                            <Bell size={10} /> Remind
-                          </button>
+                            {app.resume?.id && (
+                              <button
+                                onClick={(e) => handleDownloadResume(app, e)}
+                                disabled={downloadingResumeId === app.resume.id}
+                                className="btn-icon"
+                                style={{ color: "var(--stamp-green)" }}
+                                title={`Download attached resume: ${app.resume.label}`}
+                              >
+                                {downloadingResumeId === app.resume.id ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Download size={14} />}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setReminderApp(app)}
+                              className="btn-icon"
+                              style={{ color: "var(--string)" }}
+                              title="Set or View Reminder"
+                            >
+                              <Bell size={14} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -538,7 +555,8 @@ export const ApplicationsPage = () => {
                         <span className={`stamp ${col.stampClass}`}>{col.label}</span>
                       </td>
                       <td style={{ padding: "0.8rem 1rem", color: "var(--grey)", fontSize: "0.78rem" }}>
-                        {app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : "—"}
+                        <div style={{ fontWeight: 500, color: "var(--ink)" }}>{app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : "—"}</div>
+                        {getDaysSinceText(app) && <div style={{ fontFamily: "var(--font-stamp)", fontSize: "0.65rem", color: "var(--grey)", marginTop: "0.2rem" }}>⏱️ {getDaysSinceText(app)}</div>}
                       </td>
                       <td style={{ padding: "0.8rem 1rem" }}>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
@@ -550,31 +568,22 @@ export const ApplicationsPage = () => {
                         </div>
                       </td>
                       <td style={{ padding: "0.8rem 1rem" }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.4rem", flexWrap: "wrap" }}>
-                          <button onClick={() => setAiApp(app)} className="btn-action" style={{ color: "var(--stamp-blue)" }}>
-                            <Sparkles size={10} /> AI Score
-                          </button>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.35rem", flexWrap: "wrap" }}>
+                          <button onClick={() => setAiApp(app)} className="btn-icon" style={{ color: "var(--stamp-blue)" }} title="AI Score & Insights"><Sparkles size={15} /></button>
                           {app.resume?.id && (
                             <button
                               onClick={(e) => handleDownloadResume(app, e)}
                               disabled={downloadingResumeId === app.resume.id}
-                              className="btn-action"
-                              style={{ color: "var(--stamp-green)", borderColor: "rgba(74,124,89,0.3)", background: "rgba(74,124,89,0.06)" }}
+                              className="btn-icon"
+                              style={{ color: "var(--stamp-green)" }}
                               title={`Download attached resume: ${app.resume.label}`}
                             >
-                              {downloadingResumeId === app.resume.id ? <Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} /> : <Download size={10} />}
-                              Resume
+                              {downloadingResumeId === app.resume.id ? <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> : <Download size={15} />}
                             </button>
                           )}
-                          <button onClick={() => setReminderApp(app)} className="btn-action" style={{ color: "var(--string)" }}>
-                            <Bell size={10} /> Remind
-                          </button>
-                          <button onClick={() => { setEditingApp(app); setAppModalOpen(true); }} className="btn-icon" title="Edit">
-                            <Edit2 size={14} />
-                          </button>
-                          <button onClick={() => handleDelete(app.id)} className="btn-icon btn-icon-danger" title="Delete">
-                            <Trash2 size={14} />
-                          </button>
+                          <button onClick={() => setReminderApp(app)} className="btn-icon" style={{ color: "var(--string)" }} title="Set or View Reminder"><Bell size={15} /></button>
+                          <button onClick={() => { setEditingApp(app); setAppModalOpen(true); }} className="btn-icon" title="Edit Application"><Edit2 size={15} /></button>
+                          <button onClick={() => handleDelete(app.id)} className="btn-icon btn-icon-danger" title="Delete Application"><Trash2 size={15} /></button>
                         </div>
                       </td>
                     </tr>
