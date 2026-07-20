@@ -7,7 +7,7 @@ import React, { useState, useEffect } from "react";
 import {
   Plus, Search, LayoutGrid, Table as TableIcon, Sparkles, Bell,
   Edit2, Trash2, Building2, Calendar, Share2, ExternalLink, Copy, Check,
-  Target, Flame, Edit3, Download, Calculator, TrendingUp, Send,
+  Target, Flame, Edit3, Download, Calculator, TrendingUp, Send, Loader2,
 } from "lucide-react";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
@@ -42,13 +42,28 @@ export const DashboardPage = () => {
   const [loading, setLoading]           = useState(true);
   const [search, setSearch]             = useState("");
   const [selectedTag, setSelectedTag]   = useState("");
-  const [view, setView]                 = useState("kanban");
+  const [view, setView]         = useState("kanban");
 
   const [appModalOpen, setAppModalOpen] = useState(false);
   const [editingApp, setEditingApp]     = useState(null);
   const [aiApp, setAiApp]               = useState(null);
   const [reminderApp, setReminderApp]   = useState(null);
   const [calcOpen, setCalcOpen]         = useState(false);
+  const [downloadingResumeId, setDownloadingResumeId] = useState(null);
+
+  const handleDownloadResume = async (app, e) => {
+    if (e) e.stopPropagation();
+    if (!app?.resume?.id) return;
+    setDownloadingResumeId(app.resume.id);
+    try {
+      const res = await api.get(`/resumes/${app.resume.id}/download`);
+      window.open(res.data.url, "_blank");
+    } catch (err) {
+      alert("Failed to download resume. Please try again.");
+    } finally {
+      setDownloadingResumeId(null);
+    }
+  };
 
   const handleExport = async (format) => {
     try {
@@ -627,8 +642,20 @@ export const DashboardPage = () => {
                         )}
 
                         <hr className="cork-divider" />
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: "0.25rem", flexWrap: "wrap" }}>
                           <button onClick={() => setAiApp(app)} className="btn-action" style={{ color: "var(--stamp-blue)" }}><Sparkles size={10} /> AI Score</button>
+                          {app.resume?.id && (
+                            <button
+                              onClick={(e) => handleDownloadResume(app, e)}
+                              disabled={downloadingResumeId === app.resume.id}
+                              className="btn-action"
+                              style={{ color: "var(--stamp-green)", borderColor: "rgba(74,124,89,0.3)", background: "rgba(74,124,89,0.06)" }}
+                              title={`Download attached resume: ${app.resume.label}`}
+                            >
+                              {downloadingResumeId === app.resume.id ? <Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} /> : <Download size={10} />}
+                              Resume
+                            </button>
+                          )}
                           <button onClick={() => setReminderApp(app)} className="btn-action" style={{ color: "var(--string)" }}><Bell size={10} /> Remind</button>
                         </div>
                       </div>
@@ -676,8 +703,20 @@ export const DashboardPage = () => {
                       {app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : "—"}
                     </td>
                     <td style={{ padding: "0.8rem 1rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.4rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.4rem", flexWrap: "wrap" }}>
                         <button onClick={() => setAiApp(app)} className="btn-action" style={{ color: "var(--stamp-blue)" }}><Sparkles size={10} /> AI Score</button>
+                        {app.resume?.id && (
+                          <button
+                            onClick={(e) => handleDownloadResume(app, e)}
+                            disabled={downloadingResumeId === app.resume.id}
+                            className="btn-action"
+                            style={{ color: "var(--stamp-green)", borderColor: "rgba(74,124,89,0.3)", background: "rgba(74,124,89,0.06)" }}
+                            title={`Download attached resume: ${app.resume.label}`}
+                          >
+                            {downloadingResumeId === app.resume.id ? <Loader2 size={10} style={{ animation: "spin 1s linear infinite" }} /> : <Download size={10} />}
+                            Resume
+                          </button>
+                        )}
                         <button onClick={() => setReminderApp(app)} className="btn-action" style={{ color: "var(--string)" }}><Bell size={10} /> Remind</button>
                         <button onClick={() => { setEditingApp(app); setAppModalOpen(true); }} className="btn-icon" title="Edit"><Edit2 size={14} /></button>
                         <button onClick={() => handleDelete(app.id)} className="btn-icon btn-icon-danger" title="Delete"><Trash2 size={14} /></button>
