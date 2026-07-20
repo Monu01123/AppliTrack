@@ -7,6 +7,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const cookieParser = require("cookie-parser");
+const compression = require("compression");
 
 // ─── 3. INTERNAL IMPORTS ─────────────────────────────────────────────────────
 const errorHandler = require("./middleware/errorHandler");
@@ -19,9 +20,10 @@ app.set("trust proxy", 1);
 
 const PORT = process.env.PORT || 5000;
 
-// ─── 5. SECURITY MIDDLEWARE ──────────────────────────────────────────────────
+// ─── 5. SECURITY & PERFORMANCE MIDDLEWARE ─────────────────────────────────────
 
 app.use(helmet());
+app.use(compression());
 
 const rawClientUrl = process.env.CLIENT_URL || "http://localhost:5173";
 const cleanClientUrl = rawClientUrl.endsWith("/") ? rawClientUrl.slice(0, -1) : rawClientUrl;

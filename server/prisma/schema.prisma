@@ -85,6 +85,7 @@ model Application {
   stages     ApplicationStage[]
 
   @@index([userId, deletedAt])
+  @@index([userId, status])
   @@index([appliedAt])
 }
 
@@ -130,6 +131,7 @@ model Reminder {
   application   Application @relation(fields: [applicationId], references: [id])
 
   @@index([sent, sendAt])
+  @@index([applicationId, sent])
 }
 
 model Resume {
@@ -144,4 +146,6 @@ model Resume {
 
   user          User          @relation(fields: [userId], references: [id])
   applications  Application[] // Back-relation — which applications used this resume
+
+  @@index([userId, createdAt])
 }

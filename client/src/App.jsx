@@ -1,10 +1,21 @@
 // src/App.jsx
 import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
 import { Navbar } from "./components/Navbar";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+
+// Create QueryClient instance with sensible default caching properties
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes fresh data
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // Lazy load pages for automatic route-level code splitting
 const AuthPage        = lazy(() => import("./pages/AuthPage").then((m)        => ({ default: m.AuthPage })));
@@ -22,9 +33,10 @@ const PageLoader = () => (
 
 export function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <BrowserRouter>
+          <ErrorBoundary>
           {/* Top-nav layout: navbar stacks on top, content fills below */}
           <div className="min-h-screen flex flex-col" style={{ background: "var(--wall)" }}>
             <Navbar />
@@ -72,6 +84,7 @@ export function App() {
         </ErrorBoundary>
       </BrowserRouter>
     </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

@@ -4,6 +4,7 @@
 // All state, API calls, filtering, modal logic are 100% unchanged.
 
 import React, { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Search, LayoutGrid, Table as TableIcon,
   Sparkles, Bell, Edit2, Trash2, Building2, Download, Calculator, Filter, Loader2,
@@ -39,8 +40,6 @@ const getDaysSinceText = (app) => {
 };
 
 export const ApplicationsPage = () => {
-  const [applications, setApplications] = useState([]);
-  const [loading, setLoading]           = useState(true);
   const [search, setSearch]             = useState("");
   const [selectedTag, setSelectedTag]   = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -67,37 +66,92 @@ export const ApplicationsPage = () => {
     }
   };
 
-  const fetchApplications = async () => {
-    try {
-      setLoading(true);
-      const res  = await api.get("/applications");
-      const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
-      setApplications(list);
-    } catch (err) {
-      console.error("Error loading applications:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // ── Applications (React Query + Optimistic Mutations) ──────────────────
+  const queryClient = useQueryClient();
 
-  useEffect(() => { fetchApplications(); }, []);
+  const { data: applications = [], isLoading: loading } = useQuery({
+    queryKey: ['applications'],
+    queryFn: async () => {
+      const res = await api.get("/applications");
+      return Array.isArray(res.data) ? res.data : res.data?.data || [];
+    },
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async ({ editingId, formData }) => {
+      if (editingId) {
+        const res = await api.patch(`/applications/${editingId}`, formData);
+        return res.data;
+      } else {
+        const res = await api.post("/applications", formData);
+        return res.data;
+      }
+    },
+    onMutate: async ({ editingId, formData }) => {
+      await queryClient.cancelQueries({ queryKey: ['applications'] });
+      const previousApps = queryClient.getQueryData(['applications']);
+      if (previousApps) {
+        if (editingId) {
+          queryClient.setQueryData(['applications'], (old = []) =>
+            old.map((a) => (a.id === editingId ? { ...a, ...formData } : a))
+          );
+        } else {
+          const tempApp = {
+            id: `temp-${Date.now()}`,
+            company: formData.company || "New Application",
+            role: formData.role || "",
+            status: formData.status || "APPLIED",
+            tags: formData.tags || [],
+            appliedAt: new Date().toISOString(),
+            ...formData,
+          };
+          queryClient.setQueryData(['applications'], (old = []) => [tempApp, ...old]);
+        }
+      }
+      return { previousApps };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousApps) {
+        queryClient.setQueryData(['applications'], context.previousApps);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      await api.delete(`/applications/${id}`);
+      return id;
+    },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['applications'] });
+      const previousApps = queryClient.getQueryData(['applications']);
+      if (previousApps) {
+        queryClient.setQueryData(['applications'], (old = []) =>
+          old.filter((a) => a.id !== id)
+        );
+      }
+      return { previousApps };
+    },
+    onError: (err, id, context) => {
+      if (context?.previousApps) {
+        queryClient.setQueryData(['applications'], context.previousApps);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+    },
+  });
 
   const handleSaveApplication = async (formData) => {
-    if (editingApp) {
-      const res = await api.patch(`/applications/${editingApp.id}`, formData);
-      setApplications((prev) => prev.map((a) => (a.id === editingApp.id ? res.data : a)));
-    } else {
-      const res = await api.post("/applications", formData);
-      setApplications((prev) => [res.data, ...prev]);
-    }
+    saveMutation.mutate({ editingId: editingApp?.id, formData });
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this application?")) return;
-    try {
-      await api.delete(`/applications/${id}`);
-      setApplications((prev) => prev.filter((a) => a.id !== id));
-    } catch (err) { console.error("Failed to delete:", err); }
+    deleteMutation.mutate(id);
   };
 
   const handleExport = async (format) => {
