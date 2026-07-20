@@ -109,7 +109,7 @@ export const ApplicationModal = ({ isOpen, onClose, onSave, initialData = null }
         const formData = new FormData();
         formData.append("resume", resumeFile);
         // Use company + role as the auto-label so the user doesn't have to type it
-        formData.append("label", `${company.trim() || "Resume"} — ${role.trim() || new Date().toLocaleDateString()}`);
+        formData.append("label", `${company.trim() || "Resume"} - ${role.trim() || new Date().toLocaleDateString()}`);
         try {
           const res = await api.post("/resumes/upload", formData, {
             headers: { "Content-Type": "multipart/form-data" },

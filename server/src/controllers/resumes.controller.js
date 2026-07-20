@@ -146,10 +146,15 @@ const downloadResume = async (req, res, next) => {
     }
 
     // Generate a pre-signed URL that expires in 5 minutes
+    const ext = resume.mimeType.includes("pdf") ? "pdf" : "docx";
+    // Sanitize to safe ASCII for the standard filename attribute
+    const asciiLabel = resume.label.replace(/[^\x20-\x7E]/g, "-").replace(/["\\]/g, "");
+    const utf8Label = encodeURIComponent(`${resume.label}.${ext}`);
+
     const command = new GetObjectCommand({
       Bucket: BUCKET,
       Key: resume.fileKey,
-      ResponseContentDisposition: `attachment; filename="${resume.label}.${resume.mimeType.includes("pdf") ? "pdf" : "docx"}"`,
+      ResponseContentDisposition: `attachment; filename="${asciiLabel}.${ext}"; filename*=UTF-8''${utf8Label}`,
     });
 
     const signedUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
