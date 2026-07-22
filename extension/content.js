@@ -152,22 +152,43 @@ function parseGeneric() {
     }
   }
 
-  // 3. Absolute fallback: the document title
+  // 3. Fallback for Role: The document title
   if (!role) {
     const docTitle = document.title;
     const titleParts = docTitle.split(/[-|]/).map(s => s.trim());
     if (titleParts.length >= 2) {
       role = titleParts[0];
       // Often the company is the last part of the title
-      company = titleParts[titleParts.length - 1];
+      if (!company) company = titleParts[titleParts.length - 1];
     } else {
       role = docTitle;
     }
   }
 
-  // 4. Fallback for description (just grab main body text, rough heuristic)
+  // 4. Absolute Fallback for Role: The main <h1> tag on the page
+  // On almost every ATS (Greenhouse, Lever, Amazon, Google), the job title is the only H1
+  if (!role || role.length > 60) { 
+    const h1 = document.querySelector("h1");
+    if (h1 && h1.innerText) {
+      role = h1.innerText.trim();
+    }
+  }
+
+  // 5. Absolute Fallback for Company: The Domain Name
+  // If we are on careers.google.com, the company is probably "Google"
+  if (!company) {
+    const hostname = window.location.hostname;
+    // Strip www., careers., jobs., etc.
+    const parts = hostname.replace(/^(www\.|careers\.|jobs\.|jobs\.)/, "").split(".");
+    if (parts.length > 0) {
+      // Capitalize first letter of the domain name (e.g., "google" -> "Google")
+      company = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+    }
+  }
+
+  // 6. Fallback for description (just grab main body text, rough heuristic)
   if (!jdText) {
-    const mainEl = document.querySelector("main, #main, article, .job-description");
+    const mainEl = document.querySelector("main, #main, article, .job-description, .description");
     if (mainEl) {
       jdText = mainEl.innerText.substring(0, 5000); // cap at 5k chars to avoid crashing
     }
