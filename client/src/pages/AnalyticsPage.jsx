@@ -17,6 +17,7 @@ import {
 const COLORS = {
   APPLIED:      "#2F4B7C",  // --stamp-blue
   PHONE_SCREEN: "#6D3F96",  // --stamp-purple
+  OA_RECEIVED:  "#0E7490",  // --stamp-cyan
   INTERVIEW:    "#8B5E00",  // --stamp-amber
   OFFER:        "#2D6A4F",  // --stamp-green
   REJECTED:     "#8A8A8A",  // --stamp-grey
@@ -92,7 +93,7 @@ export const AnalyticsPage = () => {
 
   const barData            = pieData;
   const activePipelineCount = pieData
-    .filter((d) => d.statusKey === "PHONE_SCREEN" || d.statusKey === "INTERVIEW")
+    .filter((d) => d.statusKey === "PHONE_SCREEN" || d.statusKey === "OA_RECEIVED" || d.statusKey === "INTERVIEW")
     .reduce((acc, curr) => acc + curr.value, 0);
 
   const goals = data.goals || { dailyTarget: 3, applicationsToday: 0, streakDays: 0 };

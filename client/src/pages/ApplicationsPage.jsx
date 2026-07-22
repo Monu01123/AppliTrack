@@ -19,6 +19,7 @@ import { OfferCalculatorModal } from "../components/OfferCalculatorModal";
 const COLUMNS = [
   { id: "APPLIED",      label: "Applied",      stampClass: "stamp-applied",   accent: "var(--stamp-blue)"   },
   { id: "PHONE_SCREEN", label: "Phone Screen", stampClass: "stamp-phone",     accent: "var(--stamp-purple)" },
+  { id: "OA_RECEIVED",  label: "OA Received",  stampClass: "stamp-oa",        accent: "var(--stamp-cyan)"   },
   { id: "INTERVIEW",    label: "Interview",    stampClass: "stamp-interview", accent: "var(--stamp-amber)"  },
   { id: "OFFER",        label: "Offer",        stampClass: "stamp-offer",     accent: "var(--stamp-green)"  },
   { id: "REJECTED",     label: "Rejected",     stampClass: "stamp-rejected",  accent: "var(--stamp-grey)"   },

@@ -14,6 +14,7 @@
   --string:       #B23A2F;   /* accent red — CTAs, alerts */
   --stamp-blue:   #2F4B7C;   /* Applied stamp */
   --stamp-purple: #6D3F96;   /* Phone Screen stamp */
+  --stamp-cyan:   #0E7490;   /* OA Received stamp */
   --stamp-amber:  #8B5E00;   /* Interview stamp */
   --stamp-green:  #2D6A4F;   /* Offer stamp */
   --stamp-grey:   #8A8A8A;   /* Ghosted / Rejected stamp */
@@ -173,6 +174,7 @@
 
   .stamp-applied   { color: var(--stamp-blue);   }
   .stamp-phone     { color: var(--stamp-purple);  }
+  .stamp-oa        { color: var(--stamp-cyan);    }
   .stamp-interview { color: var(--stamp-amber);   }
   .stamp-offer     { color: var(--stamp-green);   }
   .stamp-rejected  { color: var(--stamp-grey);    }

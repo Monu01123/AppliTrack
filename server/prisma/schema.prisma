@@ -26,6 +26,7 @@ datasource db {
 enum Status {
   APPLIED
   PHONE_SCREEN
+  OA_RECEIVED
   INTERVIEW
   OFFER
   REJECTED

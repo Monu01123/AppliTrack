@@ -11,6 +11,7 @@ import api from "../lib/api";
 const STATUS_OPTIONS = [
   { value: "APPLIED",      label: "Applied"      },
   { value: "PHONE_SCREEN", label: "Phone Screen" },
+  { value: "OA_RECEIVED",  label: "OA Received"  },
   { value: "INTERVIEW",    label: "Interview"    },
   { value: "OFFER",        label: "Offer"        },
   { value: "REJECTED",     label: "Rejected"     },

@@ -7,12 +7,13 @@ const prisma = require("../lib/prisma");
 
 // Recommended color palette for Recharts bar & pie charts
 const STATUS_COLORS = {
-  APPLIED: "#3b82f6",      // Blue (initial application)
-  PHONE_SCREEN: "#8b5cf6", // Purple (recruiter call)
-  INTERVIEW: "#f59e0b",    // Amber (technical / hiring manager rounds)
-  OFFER: "#10b981",        // Green (success!)
-  REJECTED: "#ef4444",     // Red (closed)
-  GHOSTED: "#64748b",      // Slate Gray (no response)
+  APPLIED:      "#3b82f6",  // Blue (initial application)
+  PHONE_SCREEN: "#8b5cf6",  // Purple (recruiter call)
+  OA_RECEIVED:  "#06b6d4",  // Cyan (online assessment)
+  INTERVIEW:    "#f59e0b",  // Amber (technical / hiring manager rounds)
+  OFFER:        "#10b981",  // Green (success!)
+  REJECTED:     "#ef4444",  // Red (closed)
+  GHOSTED:      "#64748b",  // Slate Gray (no response)
 };
 
 

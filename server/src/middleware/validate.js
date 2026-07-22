@@ -30,7 +30,7 @@ const applicationSchema = z.object({
   company: z.string().min(1, "Company is required"),
   role: z.string().min(1, "Role is required"),
   status: z
-    .enum(["APPLIED", "PHONE_SCREEN", "INTERVIEW", "OFFER", "REJECTED", "GHOSTED"])
+    .enum(["APPLIED", "PHONE_SCREEN", "OA_RECEIVED", "INTERVIEW", "OFFER", "REJECTED", "GHOSTED"])
     .optional(),
   jdUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
   jdText: z.string().optional(),
