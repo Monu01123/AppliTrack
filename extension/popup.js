@@ -1,7 +1,7 @@
 // popup.js
 // Handles authentication and UI state for the Job Clipper extension.
 
-let API_BASE = "http://localhost:5000/api";
+let API_BASE = "https://3.7.237.98.nip.io/api";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const loginView = document.getElementById("login-view");
