@@ -14,7 +14,12 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-briefcase"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
         <h1>HireIQ Clipper</h1>
       </div>
-      <div id="auth-status" class="auth-status logged-out">Logged Out</div>
+      <div class="header-right" style="display: flex; align-items: center; gap: 8px;">
+        <button id="settings-btn" class="btn-icon" style="background: none; border: none; cursor: pointer; color: var(--grey);" title="Configure API URL">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+        <div id="auth-status" class="auth-status logged-out">Logged Out</div>
+      </div>
     </div>
 
     <!-- Login Screen -->
@@ -32,6 +37,21 @@
         <div id="login-error" class="error-msg hidden"></div>
         <button type="submit" class="btn primary" id="login-btn">Log In</button>
       </form>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settings-view" class="view hidden">
+      <p class="subtitle">Configure your backend connection.</p>
+      <div class="field">
+        <label>Backend API URL</label>
+        <input type="text" id="api-url-input" class="cork-input" placeholder="http://13.233.155.155:5000/api">
+        <p style="font-size: 11px; color: var(--grey); margin-top: 4px;">Use http://localhost:5000/api for local dev, or your EC2 URL.</p>
+      </div>
+      <div id="settings-success" class="success-msg hidden" style="padding: 4px 0; color: var(--stamp-green); font-size: 12px; font-weight: bold;">Saved!</div>
+      <div class="actions">
+        <button id="close-settings-btn" class="btn secondary">Back</button>
+        <button id="save-settings-btn" class="btn primary">Save</button>
+      </div>
     </div>
 
     <!-- Clipper Screen -->

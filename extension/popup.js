@@ -1,7 +1,7 @@
 // popup.js
 // Handles authentication and UI state for the Job Clipper extension.
 
-const API_BASE = "http://localhost:5000/api";
+let API_BASE = "http://localhost:5000/api";
 
 document.addEventListener("DOMContentLoaded", async () => {
   const loginView = document.getElementById("login-view");
@@ -10,6 +10,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const loginForm = document.getElementById("login-form");
   const loginError = document.getElementById("login-error");
   const logoutBtn = document.getElementById("logout-btn");
+  
+  // Settings UI
+  const settingsBtn = document.getElementById("settings-btn");
+  const settingsView = document.getElementById("settings-view");
+  const closeSettingsBtn = document.getElementById("close-settings-btn");
+  const saveSettingsBtn = document.getElementById("save-settings-btn");
+  const apiUrlInput = document.getElementById("api-url-input");
+  const settingsSuccess = document.getElementById("settings-success");
 
   const saveBtn = document.getElementById("save-btn");
   const saveError = document.getElementById("save-error");
@@ -26,14 +34,45 @@ document.addEventListener("DOMContentLoaded", async () => {
   let currentUser = null;
   let currentToken = null;
 
-  // 1. Check if we're already logged in
-  const { auth_token, user } = await chrome.storage.local.get(["auth_token", "user"]);
+  // 1. Load Settings and check if we're already logged in
+  const { auth_token, user, custom_api_url } = await chrome.storage.local.get(["auth_token", "user", "custom_api_url"]);
+  
+  if (custom_api_url) {
+    API_BASE = custom_api_url;
+  }
+  apiUrlInput.value = API_BASE;
   
   if (auth_token && user) {
     setLoggedIn(user, auth_token);
   } else {
     setLoggedOut();
   }
+
+  // Settings Handlers
+  settingsBtn.addEventListener("click", () => {
+    loginView.classList.add("hidden");
+    clipperView.classList.add("hidden");
+    settingsView.classList.remove("hidden");
+    settingsSuccess.classList.add("hidden");
+  });
+
+  closeSettingsBtn.addEventListener("click", () => {
+    settingsView.classList.add("hidden");
+    if (currentUser) setLoggedIn(currentUser, currentToken);
+    else setLoggedOut();
+  });
+
+  saveSettingsBtn.addEventListener("click", async () => {
+    const newUrl = apiUrlInput.value.trim().replace(/\/$/, "");
+    if (newUrl) {
+      API_BASE = newUrl;
+      await chrome.storage.local.set({ custom_api_url: API_BASE });
+      settingsSuccess.classList.remove("hidden");
+      setTimeout(() => {
+        closeSettingsBtn.click();
+      }, 1000);
+    }
+  });
 
   // 2. Handle Login Form Submit
   loginForm.addEventListener("submit", async (e) => {
