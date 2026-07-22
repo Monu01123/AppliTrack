@@ -30,9 +30,28 @@ function extractJobData() {
     data = parseGlassdoor();
   }
 
-  // Layer 2 & 3: Heuristic Fallbacks if site-specific didn't run or failed to find anything
-  if (!data || (!data.role && !data.company)) {
-    data = parseGeneric();
+  // Layer 2 & 3: Heuristic Fallbacks if site-specific didn't run or failed to find ALL data
+  if (!data || !data.role || !data.company) {
+    const genericData = parseGeneric();
+    if (!data) {
+      data = genericData;
+    } else {
+      // Merge in any missing fields using the generic parser
+      if (!data.role) data.role = genericData.role;
+      if (!data.company) data.company = genericData.company;
+      if (!data.jdText) data.jdText = genericData.jdText;
+    }
+  }
+
+  // Final Sanitization: Ensure we don't accidentally set company to "LinkedIn" or "Indeed"
+  if (data && data.company) {
+    if (/(linkedin|indeed|glassdoor)/i.test(data.company)) {
+      // If the actual extracted company is literally just "LinkedIn", clear it so user has to type it,
+      // unless they are actually applying to LinkedIn, but it's safer to clear it to avoid the bug.
+      if (data.company.toLowerCase() === "linkedin" || data.company.toLowerCase() === "indeed") {
+        data.company = "";
+      }
+    }
   }
 
   // Ensure URL is always captured
@@ -46,26 +65,28 @@ function extractJobData() {
 // --- SITE SPECIFIC PARSERS ---
 
 function parseLinkedIn() {
-  // LinkedIn Job Detail View (either full page or split view)
+  // LinkedIn Job Detail View
   const titleEl = document.querySelector(".job-details-jobs-unified-top-card__job-title, .topcard__title, h1, .t-24");
   
-  // LinkedIn uses many different classes for the company name depending on if you are logged in or out
-  const companyEl = document.querySelector(
-    ".job-details-jobs-unified-top-card__company-name, " +
-    ".job-details-jobs-unified-top-card__primary-description a, " +
-    ".topcard__org-name-link, " +
-    ".topcard__flavor--black-link"
-  );
+  // LinkedIn company is almost always a link to their company page
+  let companyEl = document.querySelector('a[href*="/company/"]');
+  
+  // If the link isn't found, try standard text classes
+  if (!companyEl) {
+    companyEl = document.querySelector(
+      ".job-details-jobs-unified-top-card__company-name, " +
+      ".topcard__org-name-link"
+    );
+  }
   
   const descEl = document.querySelector("#job-details, .description__text, .jobs-description__content");
 
-  console.log("HireIQ LinkedIn Scraper found:", {
-    titleEl, companyEl, descEl
-  });
-
+  let company = companyEl ? companyEl.innerText.trim() : "";
+  // Sometimes LinkedIn company links have extra text, just clean it up if needed
+  
   return {
     role: titleEl ? titleEl.innerText.trim() : "",
-    company: companyEl ? companyEl.innerText.trim() : "",
+    company: company,
     jdText: descEl ? descEl.innerText.trim() : ""
   };
 }
@@ -152,22 +173,22 @@ function parseGeneric() {
     }
   }
 
-  // 3. Fallback for Role & Company: The document title
-  // LinkedIn format: "Software Engineer at Google | LinkedIn"
-  if (!company && document.title.includes(" at ")) {
-    const match = document.title.match(/at\s+([^|-]+)/i);
-    if (match) company = match[1].trim();
-  }
-
-  if (!role) {
+  if (!role || !company) {
     const docTitle = document.title;
-    // Strip notification numbers like "(3) "
-    const cleanTitle = docTitle.replace(/^\(\d+\)\s*/, '');
+    const cleanTitle = docTitle.replace(/^\(\d+\)\s*/, ''); // Strip notification numbers like "(3) "
+    
+    // First try "Role at Company" pattern which is very common
+    if (!company && cleanTitle.includes(" at ")) {
+      const match = cleanTitle.match(/at\s+([^|-]+)/i);
+      if (match) company = match[1].trim();
+    }
+    
+    // If we still don't have role/company, split by pipe/dash
     const titleParts = cleanTitle.split(/[-|]/).map(s => s.trim());
     if (titleParts.length >= 2) {
-      role = titleParts[0].split(" at ")[0]; // "Software Engineer at Google" -> "Software Engineer"
+      if (!role) role = titleParts[0].split(" at ")[0];
       if (!company) company = titleParts[titleParts.length - 1];
-    } else {
+    } else if (!role) {
       role = cleanTitle.split(" at ")[0];
     }
   }
