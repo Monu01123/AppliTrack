@@ -89,6 +89,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // Required to save the httpOnly refresh token cookie
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
@@ -134,20 +135,46 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/applications`, {
+      let res = await fetch(`${API_BASE}/applications`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${currentToken}`
         },
         body: JSON.stringify({
-          role,
-          company,
-          jdText,
-          jdUrl,
-          status: "APPLIED" // Default status
+          role, company, jdText, jdUrl, status: "APPLIED"
         })
       });
+
+      // Handle Token Expiry
+      if (res.status === 401) {
+        // Attempt silent refresh
+        const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
+          method: "POST",
+          credentials: "include"
+        });
+
+        if (refreshRes.ok) {
+          const refreshData = await refreshRes.json();
+          currentToken = refreshData.accessToken;
+          await chrome.storage.local.set({ auth_token: currentToken });
+          
+          // Retry the save request with the new token
+          res = await fetch(`${API_BASE}/applications`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${currentToken}`
+            },
+            body: JSON.stringify({ role, company, jdText, jdUrl, status: "APPLIED" })
+          });
+        } else {
+          // If refresh fails, log the user out completely
+          await chrome.storage.local.remove(["auth_token", "user"]);
+          setLoggedOut();
+          throw new Error("Session expired. Please log in again.");
+        }
+      }
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to save");
