@@ -152,21 +152,27 @@ function parseGeneric() {
     }
   }
 
-  // 3. Fallback for Role: The document title
+  // 3. Fallback for Role & Company: The document title
+  // LinkedIn format: "Software Engineer at Google | LinkedIn"
+  if (!company && document.title.includes(" at ")) {
+    const match = document.title.match(/at\s+([^|-]+)/i);
+    if (match) company = match[1].trim();
+  }
+
   if (!role) {
     const docTitle = document.title;
-    const titleParts = docTitle.split(/[-|]/).map(s => s.trim());
+    // Strip notification numbers like "(3) "
+    const cleanTitle = docTitle.replace(/^\(\d+\)\s*/, '');
+    const titleParts = cleanTitle.split(/[-|]/).map(s => s.trim());
     if (titleParts.length >= 2) {
-      role = titleParts[0];
-      // Often the company is the last part of the title
+      role = titleParts[0].split(" at ")[0]; // "Software Engineer at Google" -> "Software Engineer"
       if (!company) company = titleParts[titleParts.length - 1];
     } else {
-      role = docTitle;
+      role = cleanTitle.split(" at ")[0];
     }
   }
 
   // 4. Absolute Fallback for Role: The main <h1> tag on the page
-  // On almost every ATS (Greenhouse, Lever, Amazon, Google), the job title is the only H1
   if (!role || role.length > 60) { 
     const h1 = document.querySelector("h1");
     if (h1 && h1.innerText) {
@@ -174,15 +180,17 @@ function parseGeneric() {
     }
   }
 
-  // 5. Absolute Fallback for Company: The Domain Name
-  // If we are on careers.google.com, the company is probably "Google"
+  // 5. Absolute Fallback for Company: The Domain Name (Ignore Job Boards)
   if (!company) {
     const hostname = window.location.hostname;
-    // Strip www., careers., jobs., etc.
-    const parts = hostname.replace(/^(www\.|careers\.|jobs\.|jobs\.)/, "").split(".");
-    if (parts.length > 0) {
-      // Capitalize first letter of the domain name (e.g., "google" -> "Google")
-      company = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+    const isJobBoard = /(linkedin|indeed|glassdoor|monster|ziprecruiter|wellfound)\.com/i.test(hostname);
+    
+    if (!isJobBoard) {
+      // Strip www., careers., jobs., etc.
+      const parts = hostname.replace(/^(www\.|careers\.|jobs\.)/, "").split(".");
+      if (parts.length > 0) {
+        company = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+      }
     }
   }
 
