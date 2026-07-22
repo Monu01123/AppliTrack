@@ -47,9 +47,21 @@ function extractJobData() {
 
 function parseLinkedIn() {
   // LinkedIn Job Detail View (either full page or split view)
-  const titleEl = document.querySelector(".job-details-jobs-unified-top-card__job-title, .topcard__title, h1");
-  const companyEl = document.querySelector(".job-details-jobs-unified-top-card__company-name, .topcard__org-name-link");
-  const descEl = document.querySelector("#job-details, .description__text");
+  const titleEl = document.querySelector(".job-details-jobs-unified-top-card__job-title, .topcard__title, h1, .t-24");
+  
+  // LinkedIn uses many different classes for the company name depending on if you are logged in or out
+  const companyEl = document.querySelector(
+    ".job-details-jobs-unified-top-card__company-name, " +
+    ".job-details-jobs-unified-top-card__primary-description a, " +
+    ".topcard__org-name-link, " +
+    ".topcard__flavor--black-link"
+  );
+  
+  const descEl = document.querySelector("#job-details, .description__text, .jobs-description__content");
+
+  console.log("HireIQ LinkedIn Scraper found:", {
+    titleEl, companyEl, descEl
+  });
 
   return {
     role: titleEl ? titleEl.innerText.trim() : "",
