@@ -1,0 +1,222 @@
+:root {
+  --wall:         #d4c4b7;
+  --card:         #FAF7F0;
+  --ink:          #1F1C17;
+  --grey:         #8A8A8A;
+  --border:       rgba(0,0,0,0.1);
+  --stamp-blue:   #2F4B7C;
+  --stamp-green:  #2D6A4F;
+  --string:       #B23A2F;
+  --tape:         #E3D9A8;
+  
+  --font-display: 'Caveat', cursive;
+  --font-ui:      'Inter', sans-serif;
+  --font-stamp:   'Special Elite', 'Courier New', monospace;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 320px;
+  background-color: var(--wall);
+  font-family: var(--font-ui);
+  color: var(--ink);
+  background-image: 
+    linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.corkboard-container {
+  padding: 16px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+}
+
+.logo h1 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  margin: 0;
+  font-weight: 700;
+}
+
+.auth-status {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+.auth-status.logged-out {
+  background: rgba(138, 138, 138, 0.15);
+  color: var(--grey);
+}
+.auth-status.logged-in {
+  background: rgba(45, 106, 79, 0.15);
+  color: var(--stamp-green);
+}
+
+.view {
+  background: var(--card);
+  padding: 16px;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  position: relative;
+}
+.view.hidden {
+  display: none;
+}
+
+/* Tape */
+.tape {
+  position: absolute;
+  background-color: var(--tape);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  opacity: 0.9;
+}
+.tape.top-center {
+  width: 80px;
+  height: 25px;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--grey);
+  margin-top: 0;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.input-group, .field {
+  margin-bottom: 12px;
+}
+.field.hidden {
+  display: none;
+}
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+input, textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: rgba(255,255,255,0.5);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--ink);
+  box-sizing: border-box;
+}
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--stamp-blue);
+  background: #fff;
+}
+
+.btn {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 3px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.btn:active {
+  transform: scale(0.98);
+}
+.btn.primary {
+  background: var(--ink);
+  color: var(--card);
+}
+.btn.secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--grey);
+}
+.btn.hidden {
+  display: none;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+.actions .btn {
+  flex: 1;
+}
+
+.error-msg {
+  background: rgba(178, 58, 47, 0.1);
+  color: var(--string);
+  padding: 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(178, 58, 47, 0.3);
+}
+.error-msg.hidden {
+  display: none;
+}
+
+.state-msg {
+  text-align: center;
+  padding: 24px 0;
+  color: var(--grey);
+  font-size: 13px;
+}
+.state-msg.hidden {
+  display: none;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--stamp-blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 12px auto;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+.success-msg {
+  text-align: center;
+  padding: 16px 0;
+}
+.success-msg.hidden {
+  display: none;
+}
+.stamp {
+  font-family: var(--font-stamp);
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--stamp-green);
+  border: 3px solid var(--stamp-green);
+  padding: 4px 12px;
+  border-radius: 4px;
+  display: inline-block;
+  transform: rotate(-5deg);
+  opacity: 0.8;
+}

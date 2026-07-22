@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HireIQ Clipper</title>
+  <link rel="stylesheet" href="popup.css">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Inter:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="corkboard-container">
+    <div class="header">
+      <div class="logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-briefcase"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        <h1>HireIQ Clipper</h1>
+      </div>
+      <div id="auth-status" class="auth-status logged-out">Logged Out</div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-view" class="view">
+      <p class="subtitle">Please log in to save applications to your tracker.</p>
+      <form id="login-form">
+        <div class="input-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" required placeholder="you@example.com">
+        </div>
+        <div class="input-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" required placeholder="••••••••">
+        </div>
+        <div id="login-error" class="error-msg hidden"></div>
+        <button type="submit" class="btn primary" id="login-btn">Log In</button>
+      </form>
+    </div>
+
+    <!-- Clipper Screen -->
+    <div id="clipper-view" class="view hidden">
+      <div class="tape top-center"></div>
+      
+      <div id="job-preview" class="job-preview hidden">
+        <div class="field">
+          <label>Role</label>
+          <input type="text" id="job-role" class="cork-input" required>
+        </div>
+        <div class="field">
+          <label>Company</label>
+          <input type="text" id="job-company" class="cork-input" required>
+        </div>
+        <div class="field hidden">
+          <label>Job Description (Extracted)</label>
+          <textarea id="job-jd" rows="2" class="cork-input"></textarea>
+        </div>
+        <div class="field hidden">
+          <label>URL</label>
+          <input type="text" id="job-url" class="cork-input">
+        </div>
+      </div>
+
+      <div id="loading-state" class="state-msg hidden">
+        <div class="spinner"></div>
+        <p>Scanning page for job details...</p>
+      </div>
+
+      <div id="error-state" class="state-msg hidden">
+        <p>Could not find a job listing on this page.</p>
+      </div>
+
+      <div id="save-error" class="error-msg hidden"></div>
+      <div id="save-success" class="success-msg hidden">
+        <span class="stamp">SAVED</span>
+      </div>
+
+      <div class="actions">
+        <button id="logout-btn" class="btn secondary">Logout</button>
+        <button id="save-btn" class="btn primary hidden">Save to Board</button>
+      </div>
+    </div>
+
+  </div>
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

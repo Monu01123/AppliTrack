@@ -35,6 +35,7 @@ app.use(
       "https://appli-track-seven.vercel.app", // Explicitly allow current Vercel URL
       "http://localhost:5173",
       "http://localhost:3000",
+      /^chrome-extension:\/\//, // Allow Chrome Extension popup
     ],
     credentials: true,
   })
