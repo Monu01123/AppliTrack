@@ -70,6 +70,16 @@ export const AuthProvider = ({ children }) => {
     return res.data;
   };
 
+  // ─── GOOGLE LOGIN FUNCTION ───────────────────────────────────────────────────
+  const googleLogin = async (credential) => {
+    const res = await api.post("/auth/google", { credential });
+    setAccessToken(res.data.accessToken);
+    setUser(res.data.user);
+    localStorage.setItem("hireiq_token", res.data.accessToken);
+    localStorage.setItem("hireiq_user", JSON.stringify(res.data.user));
+    return res.data;
+  };
+
   // ─── REGISTER FUNCTION ───────────────────────────────────────────────────────
   const register = async (name, email, password) => {
     const res = await api.post("/auth/register", { name, email, password });
@@ -91,7 +101,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, googleLogin, register, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );

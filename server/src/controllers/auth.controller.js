@@ -7,8 +7,11 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const { OAuth2Client } = require("google-auth-library");
 const prisma = require("../lib/prisma");
 const { sendVerificationEmail } = require("../lib/mailer");
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // In-memory rate limit map for resend verification
 const resendRateLimits = new Map();
@@ -199,6 +202,10 @@ const login = async (req, res, next) => {
 
     // Compare the plaintext password against the stored hash
     // bcrypt.compare handles the salt automatically — no extra work needed
+    // If user signed up via Google only, they have no password set
+    if (!user.password) {
+      return res.status(401).json({ error: "This account uses Google Sign-In. Please use the Google button to log in." });
+    }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ error: "Invalid email or password" });
@@ -219,6 +226,71 @@ const login = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
+  }
+};
+
+// ─── GOOGLE LOGIN ─────────────────────────────────────────────────────────────
+// POST /api/auth/google
+// Receives an ID token from the frontend, verifies it, and logs the user in.
+// Automatically creates a user or links to an existing account via email.
+
+const googleLogin = async (req, res, next) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) {
+      return res.status(400).json({ error: "Missing Google credential" });
+    }
+
+    // Verify the ID token securely with Google's public keys
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      // Pass the Client ID that we expect to ensure it matches
+      audience: process.env.GOOGLE_CLIENT_ID, 
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name, sub: googleId } = payload;
+
+    // Check if user exists by email
+    let user = await prisma.user.findUnique({ where: { email } });
+
+    if (user) {
+      // User exists! If they don't have a googleId linked yet, link it now.
+      if (!user.googleId) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { googleId, isVerified: true }, // Automatically verify email
+        });
+      }
+    } else {
+      // Create a brand new user
+      user = await prisma.user.create({
+        data: {
+          email,
+          name: name || "Google User",
+          googleId,
+          isVerified: true, // Google already verified their email
+        },
+      });
+    }
+
+    // Generate JWTs
+    const accessToken = generateAccessToken(user.id);
+    const refreshToken = generateRefreshToken(user.id, user.tokenVersion || 0);
+
+    sendRefreshTokenCookie(res, refreshToken);
+
+    res.json({
+      accessToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+    });
+  } catch (err) {
+    console.error("Google Login Error:", err);
+    res.status(401).json({ error: "Google authentication failed" });
   }
 };
 
@@ -289,4 +361,4 @@ const logout = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, refresh, logout, verifyEmail, resendVerification };
+module.exports = { register, login, googleLogin, refresh, logout, verifyEmail, resendVerification };

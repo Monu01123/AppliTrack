@@ -18,7 +18,7 @@ const authLimiter = rateLimit({
   message: { error: "Too many authentication attempts. Please try again in 15 minutes." },
 });
 
-const { register, login, refresh, logout, verifyEmail, resendVerification } = require("../controllers/auth.controller");
+const { register, login, googleLogin, refresh, logout, verifyEmail, resendVerification } = require("../controllers/auth.controller");
 const { validate, registerSchema, loginSchema } = require("../middleware/validate");
 
 // POST /api/auth/register
@@ -28,6 +28,10 @@ router.post("/register", authLimiter, validate(registerSchema), register);
 // POST /api/auth/login
 // Flow: validate req.body → login controller
 router.post("/login", authLimiter, validate(loginSchema), login);
+
+// POST /api/auth/google
+// Flow: directly to googleLogin controller
+router.post("/google", authLimiter, googleLogin);
 
 // POST /api/auth/refresh
 // No body validation needed — it reads from the cookie

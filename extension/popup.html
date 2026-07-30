@@ -6,6 +6,7 @@
   <title>HireIQ Clipper</title>
   <link rel="stylesheet" href="popup.css">
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Inter:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <div class="corkboard-container">
@@ -25,6 +26,16 @@
     <!-- Login Screen -->
     <div id="login-view" class="view">
       <p class="subtitle">Please log in to save applications to your tracker.</p>
+
+      <!-- Google Sign-In Button -->
+      <div id="google-signin-btn" style="display: flex; justify-content: center; margin-bottom: 12px;"></div>
+
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+        <hr style="flex: 1; border: none; border-top: 1px solid rgba(31,28,23,0.15);">
+        <span style="font-family: 'Inter', sans-serif; font-size: 11px; color: #8A7060; text-transform: uppercase; letter-spacing: 0.05em;">or</span>
+        <hr style="flex: 1; border: none; border-top: 1px solid rgba(31,28,23,0.15);">
+      </div>
+
       <form id="login-form">
         <div class="input-group">
           <label for="email">Email</label>

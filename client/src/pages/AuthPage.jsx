@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../context/AuthContext";
 import api from "../lib/api";
 import { ArrowRight, Mail, Lock, User, AlertCircle, Sparkles, CheckCircle2, Briefcase } from "lucide-react";
@@ -39,7 +40,7 @@ export const AuthPage = () => {
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [resendStatus, setResendStatus] = useState("");
 
-  const { user, login, register } = useAuth();
+  const { user, login, googleLogin, register } = useAuth();
   const navigate = useNavigate();
 
   // If user is already logged in, redirect them to the dashboard!
@@ -66,6 +67,19 @@ export const AuthPage = () => {
     } catch (err) {
       setError(err.response?.data?.error || "Authentication failed. Please try again.");
       setErrorCode(err.response?.data?.code || "");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError("");
+    setSubmitting(true);
+    try {
+      await googleLogin(credentialResponse.credential);
+      navigate("/");
+    } catch (err) {
+      setError(err.response?.data?.error || "Google Authentication failed. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -427,6 +441,26 @@ export const AuthPage = () => {
               </div>
             ) : (
               <>
+                {/* Google Sign-In Button */}
+                <div style={{ marginBottom: "1.25rem", display: "flex", justifyContent: "center" }}>
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => setError("Google Sign-In was unsuccessful or closed.")}
+                    useOneTap
+                    theme="outline"
+                    size="large"
+                    text={isLogin ? "signin_with" : "signup_with"}
+                    shape="rectangular"
+                    width="100%"
+                  />
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem" }}>
+                  <hr style={{ flex: 1, borderTop: "1px solid rgba(31,28,23,0.15)" }} />
+                  <span style={{ fontFamily: "var(--font-ui)", fontSize: "0.75rem", color: "var(--grey)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Or continue with email</span>
+                  <hr style={{ flex: 1, borderTop: "1px solid rgba(31,28,23,0.15)" }} />
+                </div>
+
                 {/* Form */}
                 <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.1rem" }}>
                 {/* Full Name — Signup Only */}

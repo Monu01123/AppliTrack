@@ -2,6 +2,7 @@
 import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "./context/AuthContext";
 import { Navbar } from "./components/Navbar";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -34,8 +35,9 @@ const PageLoader = () => (
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BrowserRouter>
+      <GoogleOAuthProvider clientId="222026984237-3cjjgs9mtegcf8fjo2rlb5vfkqsmc7no.apps.googleusercontent.com">
+        <AuthProvider>
+          <BrowserRouter>
           <ErrorBoundary>
           {/* Top-nav layout: navbar stacks on top, content fills below */}
           <div className="min-h-screen flex flex-col" style={{ background: "var(--wall)" }}>
@@ -82,8 +84,9 @@ export function App() {
             </main>
           </div>
         </ErrorBoundary>
-      </BrowserRouter>
-    </AuthProvider>
+        </BrowserRouter>
+      </AuthProvider>
+      </GoogleOAuthProvider>
     </QueryClientProvider>
   );
 }

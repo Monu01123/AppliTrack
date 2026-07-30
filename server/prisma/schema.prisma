@@ -41,7 +41,8 @@ model User {
   id           String        @id @default(cuid())  // cuid = unique ID like "clx4k2..."
   name         String
   email        String        @unique               // @unique = no two users share an email
-  password     String                              // will store bcrypt hash, never plaintext
+  password     String?                             // optional for Google users
+  googleId     String?       @unique               // linking Google accounts
   
   // Email Verification
   isVerified        Boolean  @default(false)

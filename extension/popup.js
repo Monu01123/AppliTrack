@@ -48,6 +48,45 @@ document.addEventListener("DOMContentLoaded", async () => {
     setLoggedOut();
   }
 
+  // Initialize Google Sign-In button
+  function initGoogleSignIn() {
+    if (typeof google === "undefined" || !google.accounts) {
+      // GIS script hasn't loaded yet, retry shortly
+      setTimeout(initGoogleSignIn, 200);
+      return;
+    }
+    google.accounts.id.initialize({
+      client_id: "222026984237-3cjjgs9mtegcf8fjo2rlb5vfkqsmc7no.apps.googleusercontent.com",
+      callback: handleGoogleCredential,
+    });
+    google.accounts.id.renderButton(
+      document.getElementById("google-signin-btn"),
+      { theme: "outline", size: "large", text: "signin_with", shape: "rectangular", width: 280 }
+    );
+  }
+
+  async function handleGoogleCredential(response) {
+    loginError.classList.add("hidden");
+    try {
+      const res = await fetch(`${API_BASE}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ credential: response.credential })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Google login failed");
+
+      await chrome.storage.local.set({ auth_token: data.accessToken, user: data.user });
+      setLoggedIn(data.user, data.accessToken);
+    } catch (err) {
+      loginError.textContent = err.message;
+      loginError.classList.remove("hidden");
+    }
+  }
+
+  initGoogleSignIn();
+
   // Settings Handlers
   settingsBtn.addEventListener("click", () => {
     loginView.classList.add("hidden");
