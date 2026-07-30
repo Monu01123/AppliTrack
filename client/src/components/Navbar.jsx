@@ -6,7 +6,18 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { LogOut, Menu, X, Chrome } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
+
+// Inline Chrome icon (lucide-react may not export "Chrome" in all versions)
+const ChromeIcon = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="12" r="4" />
+    <line x1="21.17" y1="8" x2="12" y2="8" />
+    <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
+    <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
+  </svg>
+);
 
 const NAV_LINKS = [
   { to: "/",             label: "Overview"     },
@@ -144,7 +155,7 @@ export const Navbar = () => {
             onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
             onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
           >
-            <Chrome size={13} /> Extension
+            <ChromeIcon size={13} /> Extension
           </a>
         </nav>
 
@@ -232,7 +243,7 @@ export const Navbar = () => {
               marginBottom: "0.5rem",
             }}
           >
-            <Chrome size={14} /> Get Chrome Extension
+            <ChromeIcon size={14} /> Get Chrome Extension
           </a>
 
           {/* User + logout at bottom of mobile menu */}
