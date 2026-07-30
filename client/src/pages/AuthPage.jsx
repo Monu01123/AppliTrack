@@ -451,7 +451,6 @@ export const AuthPage = () => {
                     size="large"
                     text={isLogin ? "signin_with" : "signup_with"}
                     shape="rectangular"
-                    width="100%"
                   />
                 </div>
 
