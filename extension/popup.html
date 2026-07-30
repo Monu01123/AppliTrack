@@ -37,6 +37,9 @@
         <div id="login-error" class="error-msg hidden"></div>
         <button type="submit" class="btn primary" id="login-btn">Log In</button>
       </form>
+      <div style="text-align: center; margin-top: 16px; font-size: 13px; color: var(--grey);">
+        Don't have an account? <a href="https://applitrack.vercel.app/auth" target="_blank" style="color: var(--stamp-blue); text-decoration: none; font-weight: 600;">Sign up here</a>
+      </div>
     </div>
 
     <!-- Settings Screen -->
@@ -91,9 +94,15 @@
         <span class="stamp">SAVED</span>
       </div>
 
-      <div class="actions">
-        <button id="logout-btn" class="btn secondary">Logout</button>
-        <button id="save-btn" class="btn primary hidden">Save to Board</button>
+      <div class="actions" style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; gap: 8px; width: 100%;">
+          <button id="logout-btn" class="btn secondary" style="flex: 1;">Logout</button>
+          <button id="save-btn" class="btn primary hidden" style="flex: 2;">Save to Board</button>
+        </div>
+        <a href="https://applitrack.vercel.app" target="_blank" class="btn secondary" style="text-align: center; text-decoration: none; font-family: var(--font-ui); display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open Dashboard
+        </a>
       </div>
     </div>
 
