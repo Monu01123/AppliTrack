@@ -22,7 +22,9 @@ const PORT = process.env.PORT || 5000;
 
 // ─── 5. SECURITY & PERFORMANCE MIDDLEWARE ─────────────────────────────────────
 
-app.use(helmet());
+app.use(helmet({
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
+}));
 app.use(compression());
 
 const rawClientUrl = process.env.CLIENT_URL || "http://localhost:5173";
