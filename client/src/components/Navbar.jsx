@@ -6,7 +6,7 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, X, Chrome } from "lucide-react";
 
 const NAV_LINKS = [
   { to: "/",             label: "Overview"     },
@@ -14,6 +14,8 @@ const NAV_LINKS = [
   { to: "/analytics",    label: "Funnel Stats" },
   { to: "/reminders",    label: "Reminders"    },
 ];
+
+const EXTENSION_URL = "https://chromewebstore.google.com/detail/hireiq-job-clipper/jionmlbcapmnbggkgmkjcgmdbpfpdpjd";
 
 // Tiny SVG push-pin for the logo
 const PinIcon = () => (
@@ -117,6 +119,33 @@ export const Navbar = () => {
               </Link>
             );
           })}
+          {/* Chrome Extension Link */}
+          <a
+            href={EXTENSION_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Get Chrome Extension"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.35rem",
+              fontFamily: "var(--font-ui)",
+              fontSize: "0.8rem",
+              fontWeight: 500,
+              color: "var(--wall)",
+              background: "var(--ink)",
+              textDecoration: "none",
+              padding: "0.35rem 0.7rem",
+              borderRadius: "2px",
+              whiteSpace: "nowrap",
+              transition: "opacity 0.15s",
+              marginLeft: "0.5rem",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+          >
+            <Chrome size={13} /> Extension
+          </a>
         </nav>
 
         {/* Col 3: User info + Logout — fixed width, right-aligned, desktop only */}
@@ -180,6 +209,31 @@ export const Navbar = () => {
               </Link>
             );
           })}
+
+          {/* Chrome Extension Link — Mobile */}
+          <a
+            href={EXTENSION_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setMobileOpen(false)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              fontFamily: "var(--font-ui)",
+              fontSize: "0.9rem",
+              fontWeight: 500,
+              color: "var(--wall)",
+              background: "var(--ink)",
+              textDecoration: "none",
+              padding: "0.5rem 0.75rem",
+              borderRadius: "2px",
+              marginTop: "0.5rem",
+              marginBottom: "0.5rem",
+            }}
+          >
+            <Chrome size={14} /> Get Chrome Extension
+          </a>
 
           {/* User + logout at bottom of mobile menu */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "0.75rem" }}>

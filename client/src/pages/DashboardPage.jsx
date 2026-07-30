@@ -305,11 +305,121 @@ export const DashboardPage = () => {
 
   const goalPct = Math.min(100, Math.round((goals.applicationsToday / Math.max(1, goals.dailyTarget)) * 100));
 
+  // ── Extension Banner State ─────────────────────────────────────────────
+  const [extensionBannerDismissed, setExtensionBannerDismissed] = useState(() => {
+    try { return localStorage.getItem("hireiq_ext_banner_dismissed") === "true"; } catch { return false; }
+  });
+
+  const dismissExtensionBanner = () => {
+    setExtensionBannerDismissed(true);
+    try { localStorage.setItem("hireiq_ext_banner_dismissed", "true"); } catch {}
+  };
+
+  const EXTENSION_URL = "https://chromewebstore.google.com/detail/hireiq-job-clipper/jionmlbcapmnbggkgmkjcgmdbpfpdpjd";
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div style={{ padding: "2rem 1.5rem", maxWidth: 1400, margin: "0 auto" }}>
 
-      {/* ── Top action bar ──────────────────────────────────────────────── */}
+      {/* ── Chrome Extension Promo Banner ──────────────────────────────── */}
+      {!extensionBannerDismissed && (
+        <div
+          id="extension-banner"
+          style={{
+            position: "relative",
+            background: "linear-gradient(135deg, var(--ink) 0%, #2F4B7C 100%)",
+            borderRadius: "3px",
+            padding: "1.25rem 1.5rem",
+            marginBottom: "1.75rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "1.25rem",
+            flexWrap: "wrap",
+            boxShadow: "0 2px 12px rgba(31,28,23,0.18)",
+            overflow: "hidden",
+          }}
+        >
+          {/* Decorative pin in top-left corner */}
+          <div style={{
+            position: "absolute", top: -4, left: 20,
+            width: 12, height: 12, borderRadius: "50%",
+            background: "#B23A2F", boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+          }} />
+
+          {/* Chrome icon */}
+          <div style={{
+            width: 48, height: 48, borderRadius: "50%",
+            background: "rgba(255,255,255,0.12)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+          }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="4" />
+              <line x1="21.17" y1="8" x2="12" y2="8" />
+              <line x1="3.95" y1="6.06" x2="8.54" y2="14" />
+              <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
+            </svg>
+          </div>
+
+          {/* Text */}
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <h3 style={{
+              fontFamily: "var(--font-display)", fontSize: "1.05rem",
+              fontWeight: 700, color: "#fff", margin: 0, lineHeight: 1.3,
+            }}>
+              Save Jobs in One Click with HireIQ Clipper
+            </h3>
+            <p style={{
+              fontFamily: "var(--font-ui)", fontSize: "0.82rem",
+              color: "rgba(255,255,255,0.7)", margin: "0.3rem 0 0", lineHeight: 1.4,
+            }}>
+              Browse LinkedIn, Indeed, or any career page — click the extension and the job is instantly saved to your board. No copy-pasting required!
+            </p>
+          </div>
+
+          {/* CTA Button */}
+          <a
+            href={EXTENSION_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            id="extension-install-btn"
+            style={{
+              display: "inline-flex", alignItems: "center", gap: "0.5rem",
+              fontFamily: "var(--font-stamp)", fontSize: "0.7rem",
+              letterSpacing: "0.1em", textTransform: "uppercase",
+              fontWeight: 700, color: "var(--ink)",
+              background: "#fff", textDecoration: "none",
+              padding: "0.6rem 1.2rem", borderRadius: "2px",
+              transition: "transform 0.15s, box-shadow 0.15s",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+              whiteSpace: "nowrap", flexShrink: 0,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(0,0,0,0.2)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.15)"; }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Add to Chrome
+          </a>
+
+          {/* Dismiss button */}
+          <button
+            onClick={dismissExtensionBanner}
+            aria-label="Dismiss banner"
+            style={{
+              position: "absolute", top: "0.6rem", right: "0.6rem",
+              background: "none", border: "none", cursor: "pointer",
+              color: "rgba(255,255,255,0.45)", fontSize: "1.1rem", lineHeight: 1,
+              padding: "0.2rem",
+              transition: "color 0.15s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.9)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.45)")}
+          >
+            ✕
+          </button>
+        </div>
+      )}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center", justifyContent: "space-between", marginBottom: "1.75rem" }}>
         {/* Search */}
         <div style={{ position: "relative", flex: 1, minWidth: 200, maxWidth: 360 }}>
