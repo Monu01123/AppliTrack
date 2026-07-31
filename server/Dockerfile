@@ -1,5 +1,8 @@
-# Use the official lightweight Node.js 20 Alpine image
-FROM node:20-alpine AS builder
+# Use node:20-bookworm-slim because Prisma requires OpenSSL and glibc
+FROM node:20-bookworm-slim AS builder
+
+# Install OpenSSL (required by Prisma)
+RUN apt-get update -y && apt-get install -y openssl
 
 # Set the working directory
 WORKDIR /app
@@ -19,7 +22,10 @@ COPY . .
 
 # --- Runner Stage ---
 # We use a second stage to keep the final image size small
-FROM node:20-alpine AS runner
+FROM node:20-bookworm-slim AS runner
+
+# Install OpenSSL in the runner as well
+RUN apt-get update -y && apt-get install -y openssl
 
 WORKDIR /app
 
