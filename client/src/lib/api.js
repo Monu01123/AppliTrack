@@ -50,7 +50,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const { data } = await axios.post(
-          "http://localhost:5000/api/auth/refresh",
+          `${finalBaseUrl}/auth/refresh`,
           {},
           { withCredentials: true }
         );

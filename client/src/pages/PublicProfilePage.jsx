@@ -23,7 +23,11 @@ export const PublicProfilePage = () => {
       try {
         setLoading(true);
         setError("");
-        const res = await fetch(`http://localhost:5000/api/public/profile/${slugOrId}`);
+        // Use the configured api client base URL or fallback
+        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+        const finalBaseUrl = apiUrl.endsWith("/api") ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
+        
+        const res = await fetch(`${finalBaseUrl}/public/profile/${slugOrId}`);
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data.error || "Profile not found.");
