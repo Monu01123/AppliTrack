@@ -6,11 +6,13 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+const { RedisStore } = require("rate-limit-redis");
 const cookieParser = require("cookie-parser");
 const compression = require("compression");
 
 // ─── 3. INTERNAL IMPORTS ─────────────────────────────────────────────────────
 const errorHandler = require("./middleware/errorHandler");
+const { redisClient } = require("./lib/redis");
 
 // ─── 4. INIT APP ─────────────────────────────────────────────────────────────
 const app = express();
@@ -48,6 +50,9 @@ const globalLimiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.sendCommand(args),
+  }),
   message: {
     error: "Too many requests from this IP, please try again after 15 minutes.",
   },

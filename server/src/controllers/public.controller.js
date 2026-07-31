@@ -4,12 +4,20 @@
 // Excludes sensitive fields like notes, job description text, and private URLs.
 
 const prisma = require("../lib/prisma");
+const { getCache, setCache } = require("../lib/redis");
 
 // GET /api/public/profile/:slugOrId
 // Unauthenticated route for viewing a shareable public profile
 const getPublicProfile = async (req, res, next) => {
   try {
     const { slugOrId } = req.params;
+
+    const cacheKey = `public:profile:${slugOrId}`;
+    const cachedData = await getCache(cacheKey);
+
+    if (cachedData) {
+      return res.json({ ...cachedData, cached: true });
+    }
 
     const user = await prisma.user.findFirst({
       where: {
@@ -56,7 +64,7 @@ const getPublicProfile = async (req, res, next) => {
     const interviews = applications.filter((a) => a.status === "INTERVIEW").length;
     const offers = applications.filter((a) => a.status === "OFFER").length;
 
-    res.json({
+    const result = {
       user: {
         name: user.name,
         profileSlug: user.profileSlug,
@@ -68,7 +76,12 @@ const getPublicProfile = async (req, res, next) => {
         offers,
       },
       applications,
-    });
+    };
+
+    // Cache the public profile for 60 seconds
+    await setCache(cacheKey, result, 60);
+
+    res.json(result);
   } catch (err) {
     next(err);
   }

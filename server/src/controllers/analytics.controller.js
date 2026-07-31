@@ -4,6 +4,7 @@
 // Formats the output specifically for Recharts graphs on the frontend!
 
 const prisma = require("../lib/prisma");
+const { getCache, setCache, delCache } = require("../lib/redis");
 
 // Recommended color palette for Recharts bar & pie charts
 const STATUS_COLORS = {
@@ -20,6 +21,13 @@ const STATUS_COLORS = {
 
 const getAnalyticsSummary = async (req, res, next) => {
   try {
+    const cacheKey = `analytics:summary:${req.userId}`;
+    const cachedData = await getCache(cacheKey);
+    
+    if (cachedData) {
+      return res.json({ ...cachedData, cached: true });
+    }
+
     const statusCounts = await prisma.application.groupBy({
       by: ["status"],
       where: {
@@ -72,7 +80,7 @@ const getAnalyticsSummary = async (req, res, next) => {
 
     const goalStats = await calculateGoalStats(req.userId);
 
-    res.json({
+    const result = {
       total,
       byStatus,
       responseRate,
@@ -80,7 +88,12 @@ const getAnalyticsSummary = async (req, res, next) => {
       offerRate,
       tagCounts,
       goals: goalStats,
-    });
+    };
+
+    // Cache the result for 5 minutes (300 seconds)
+    await setCache(cacheKey, result, 300);
+
+    res.json(result);
 
   } catch (err) {
     next(err);

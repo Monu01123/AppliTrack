@@ -1,6 +1,7 @@
 // src/controllers/applications.controller.js
 
 const prisma = require("../lib/prisma");
+const { delCache } = require("../lib/redis");
 
 // ─── GET ALL APPLICATIONS ─────────────────────────────────────────────────────
 // GET /api/applications?status=APPLIED&sort=appliedAt&order=desc&page=1&limit=10
@@ -95,6 +96,9 @@ const createApplication = async (req, res, next) => {
       },
     });
 
+    // Invalidate analytics cache
+    await delCache(`analytics:summary:${req.userId}`);
+
     res.status(201).json(application); // 201 Created
   } catch (err) {
     next(err);
@@ -167,6 +171,9 @@ const updateApplication = async (req, res, next) => {
       include: { resume: { select: { id: true, label: true } } },
     });
 
+    // Invalidate analytics cache
+    await delCache(`analytics:summary:${req.userId}`);
+
     res.json(updated);
   } catch (err) {
     next(err);
@@ -192,6 +199,9 @@ const deleteApplication = async (req, res, next) => {
       where: { id },
       data: { deletedAt: new Date() },
     });
+
+    // Invalidate analytics cache
+    await delCache(`analytics:summary:${req.userId}`);
 
     res.json({ message: "Application deleted successfully" });
   } catch (err) {
