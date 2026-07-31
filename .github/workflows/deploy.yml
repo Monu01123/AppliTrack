@@ -54,7 +54,7 @@ jobs:
 
             # Rebuild and restart the backend and redis containers in the background
             # using the local postgres database via host.docker.internal (if configured)
-            docker-compose up -d --build
+            sudo docker-compose up -d --build
 
             # Cleanup old unused docker images to save EC2 disk space
-            docker image prune -f
+            sudo docker image prune -f
