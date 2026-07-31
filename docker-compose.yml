@@ -11,7 +11,7 @@ services:
       - "5000:5000"
     environment:
       - NODE_ENV=production
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis://hireiq-redis:6379
     # Read the remaining environment variables from the server/.env file
     # This allows the container to seamlessly connect to the existing native PostgreSQL DB
     env_file:
@@ -21,9 +21,10 @@ services:
     restart: unless-stopped
     # Use network_mode: "host" if needed to access localhost DB easily,
     # but since it's an EC2, we can just use the Docker network and use host.docker.internal 
-    # or rely on the DATABASE_URL being configured with the public/private EC2 IP.
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - app_network
 
   redis:
     image: redis:7-alpine
@@ -34,6 +35,12 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --save 60 1 --loglevel warning
+    networks:
+      - app_network
 
 volumes:
   redis_data:
+
+networks:
+  app_network:
+    driver: bridge
