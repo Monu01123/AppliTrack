@@ -447,7 +447,7 @@ export const AuthPage = () => {
                     onSuccess={handleGoogleSuccess}
                     onError={() => setError("Google Sign-In was unsuccessful or closed.")}
                     useOneTap
-                    theme="outline"
+                    theme="filled_black"
                     size="large"
                     text={isLogin ? "signin_with" : "signup_with"}
                     shape="rectangular"

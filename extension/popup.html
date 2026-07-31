@@ -6,34 +6,35 @@
   <title>HireIQ Clipper</title>
   <link rel="stylesheet" href="popup.css">
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Inter:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <div class="corkboard-container">
     <div class="header">
-      <div class="logo">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-briefcase"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-        <h1>HireIQ Clipper</h1>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <svg width="18" height="22" viewBox="0 0 20 24" fill="none">
+          <ellipse cx="10" cy="8" rx="8" ry="8" fill="#B23A2F" />
+          <ellipse cx="10" cy="7" rx="4.5" ry="4.5" fill="rgba(255,255,255,0.25)" />
+          <rect x="9" y="15" width="2" height="8" rx="1" fill="#8A7060" />
+        </svg>
+        <h1 style="font-family: 'Caveat', cursive; font-size: 24px; font-weight: 700; color: #1F1C17; letter-spacing: -0.02em; margin: 0;">HireIQ Clipper</h1>
       </div>
       <div class="header-right" style="display: flex; align-items: center; gap: 8px;">
-        <button id="settings-btn" class="btn-icon" style="background: none; border: none; cursor: pointer; color: var(--grey);" title="Configure API URL">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
         <div id="auth-status" class="auth-status logged-out">Logged Out</div>
       </div>
     </div>
 
     <!-- Login Screen -->
     <div id="login-view" class="view">
-      <p class="subtitle">Please log in to save applications to your tracker.</p>
+      <p class="subtitle" style="margin-bottom: 20px;">Please log in to save applications to your tracker.</p>
 
-      <!-- Google Sign-In Button -->
-      <div id="google-signin-btn" style="display: flex; justify-content: center; margin-bottom: 12px;"></div>
+      <button id="web-login-btn" type="button" class="btn" style="background: #2F4B7C; color: white; width: 100%; margin-bottom: 12px;">
+        Log In via Web App
+      </button>
 
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-        <hr style="flex: 1; border: none; border-top: 1px solid rgba(31,28,23,0.15);">
-        <span style="font-family: 'Inter', sans-serif; font-size: 11px; color: #8A7060; text-transform: uppercase; letter-spacing: 0.05em;">or</span>
-        <hr style="flex: 1; border: none; border-top: 1px solid rgba(31,28,23,0.15);">
+        <hr style="flex: 1; border: none; border-top: 1px dashed rgba(31,28,23,0.25);">
+        <span style="font-family: 'Inter', sans-serif; font-size: 11px; color: #8A7060; text-transform: uppercase; letter-spacing: 0.05em;">or use email</span>
+        <hr style="flex: 1; border: none; border-top: 1px dashed rgba(31,28,23,0.25);">
       </div>
 
       <form id="login-form">
@@ -49,22 +50,7 @@
         <button type="submit" class="btn primary" id="login-btn">Log In</button>
       </form>
       <div style="text-align: center; margin-top: 16px; font-size: 13px; color: var(--grey);">
-        Don't have an account? <a href="https://applitrack.vercel.app/auth" target="_blank" style="color: var(--stamp-blue); text-decoration: none; font-weight: 600;">Sign up here</a>
-      </div>
-    </div>
-
-    <!-- Settings Screen -->
-    <div id="settings-view" class="view hidden">
-      <p class="subtitle">Configure your backend connection.</p>
-      <div class="field">
-        <label>Backend API URL</label>
-        <input type="text" id="api-url-input" class="cork-input" placeholder="https://3.7.237.98.nip.io/api">
-        <p style="font-size: 11px; color: var(--grey); margin-top: 4px;">Use http://localhost:5000/api for local dev, or your production URL.</p>
-      </div>
-      <div id="settings-success" class="success-msg hidden" style="padding: 4px 0; color: var(--stamp-green); font-size: 12px; font-weight: bold;">Saved!</div>
-      <div class="actions">
-        <button id="close-settings-btn" class="btn secondary">Back</button>
-        <button id="save-settings-btn" class="btn primary">Save</button>
+        Don't have an account? <a href="https://appli-track-seven.vercel.app/auth" target="_blank" style="color: var(--stamp-blue); text-decoration: none; font-weight: 600;">Sign up here</a>
       </div>
     </div>
 
@@ -110,7 +96,7 @@
           <button id="logout-btn" class="btn secondary" style="flex: 1;">Logout</button>
           <button id="save-btn" class="btn primary hidden" style="flex: 2;">Save to Board</button>
         </div>
-        <a href="https://applitrack.vercel.app" target="_blank" class="btn secondary" style="text-align: center; text-decoration: none; font-family: var(--font-ui); display: flex; align-items: center; justify-content: center; gap: 6px;">
+        <a href="https://appli-track-seven.vercel.app" target="_blank" class="btn secondary" style="text-align: center; text-decoration: none; font-family: var(--font-ui); display: flex; align-items: center; justify-content: center; gap: 6px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
           Open Dashboard
         </a>

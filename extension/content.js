@@ -225,3 +225,29 @@ function parseGeneric() {
 
   return { role, company, jdText };
 }
+
+// --- AUTO AUTHENTICATION SYNC ---
+// If we are on the HireIQ web app, poll localStorage for the token (since it's a SPA and doesn't reload)
+if (window.location.hostname.includes("appli-track-seven.vercel.app") || window.location.hostname === "localhost") {
+  let lastSyncedToken = null;
+
+  setInterval(() => {
+    const token = localStorage.getItem("hireiq_token");
+    const userStr = localStorage.getItem("hireiq_user");
+    
+    // Only sync if the token exists and is different from the last one we synced
+    if (token && userStr && token !== lastSyncedToken) {
+      try {
+        const user = JSON.parse(userStr);
+        chrome.runtime.sendMessage({ action: "SYNC_AUTH", token, user }, (response) => {
+          if (response && response.success) {
+            lastSyncedToken = token;
+            console.log("HireIQ Extension: Successfully synced authentication token!");
+          }
+        });
+      } catch (e) {
+        console.error("HireIQ Extension: Failed to parse user data for sync");
+      }
+    }
+  }, 1000); // Check every second
+}

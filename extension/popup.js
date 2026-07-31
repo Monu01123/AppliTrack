@@ -10,15 +10,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const loginForm = document.getElementById("login-form");
   const loginError = document.getElementById("login-error");
   const logoutBtn = document.getElementById("logout-btn");
-  
-  // Settings UI
-  const settingsBtn = document.getElementById("settings-btn");
-  const settingsView = document.getElementById("settings-view");
-  const closeSettingsBtn = document.getElementById("close-settings-btn");
-  const saveSettingsBtn = document.getElementById("save-settings-btn");
-  const apiUrlInput = document.getElementById("api-url-input");
-  const settingsSuccess = document.getElementById("settings-success");
-
   const saveBtn = document.getElementById("save-btn");
   const saveError = document.getElementById("save-error");
   const saveSuccess = document.getElementById("save-success");
@@ -40,7 +31,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (custom_api_url) {
     API_BASE = custom_api_url;
   }
-  apiUrlInput.value = API_BASE;
   
   if (auth_token && user) {
     setLoggedIn(user, auth_token);
@@ -48,70 +38,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     setLoggedOut();
   }
 
-  // Initialize Google Sign-In button
-  function initGoogleSignIn() {
-    if (typeof google === "undefined" || !google.accounts) {
-      // GIS script hasn't loaded yet, retry shortly
-      setTimeout(initGoogleSignIn, 200);
-      return;
-    }
-    google.accounts.id.initialize({
-      client_id: "222026984237-3cjjgs9mtegcf8fjo2rlb5vfkqsmc7no.apps.googleusercontent.com",
-      callback: handleGoogleCredential,
+  // Handle Web Login Button
+  const webLoginBtn = document.getElementById("web-login-btn");
+  if (webLoginBtn) {
+    webLoginBtn.addEventListener("click", () => {
+      chrome.tabs.create({ url: "https://appli-track-seven.vercel.app/auth" });
     });
-    google.accounts.id.renderButton(
-      document.getElementById("google-signin-btn"),
-      { theme: "outline", size: "large", text: "signin_with", shape: "rectangular", width: 280 }
-    );
   }
-
-  async function handleGoogleCredential(response) {
-    loginError.classList.add("hidden");
-    try {
-      const res = await fetch(`${API_BASE}/auth/google`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ credential: response.credential })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Google login failed");
-
-      await chrome.storage.local.set({ auth_token: data.accessToken, user: data.user });
-      setLoggedIn(data.user, data.accessToken);
-    } catch (err) {
-      loginError.textContent = err.message;
-      loginError.classList.remove("hidden");
-    }
-  }
-
-  initGoogleSignIn();
-
-  // Settings Handlers
-  settingsBtn.addEventListener("click", () => {
-    loginView.classList.add("hidden");
-    clipperView.classList.add("hidden");
-    settingsView.classList.remove("hidden");
-    settingsSuccess.classList.add("hidden");
-  });
-
-  closeSettingsBtn.addEventListener("click", () => {
-    settingsView.classList.add("hidden");
-    if (currentUser) setLoggedIn(currentUser, currentToken);
-    else setLoggedOut();
-  });
-
-  saveSettingsBtn.addEventListener("click", async () => {
-    const newUrl = apiUrlInput.value.trim().replace(/\/$/, "");
-    if (newUrl) {
-      API_BASE = newUrl;
-      await chrome.storage.local.set({ custom_api_url: API_BASE });
-      settingsSuccess.classList.remove("hidden");
-      setTimeout(() => {
-        closeSettingsBtn.click();
-      }, 1000);
-    }
-  });
 
   // 2. Handle Login Form Submit
   loginForm.addEventListener("submit", async (e) => {
