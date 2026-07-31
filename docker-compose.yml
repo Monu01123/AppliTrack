@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: hireiq-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+    # Read the remaining environment variables from the server/.env file
+    # This allows the container to seamlessly connect to the existing native PostgreSQL DB
+    env_file:
+      - ./server/.env
+    depends_on:
+      - redis
+    restart: unless-stopped
+    # Use network_mode: "host" if needed to access localhost DB easily,
+    # but since it's an EC2, we can just use the Docker network and use host.docker.internal 
+    # or rely on the DATABASE_URL being configured with the public/private EC2 IP.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  redis:
+    image: redis:7-alpine
+    container_name: hireiq-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --save 60 1 --loglevel warning
+
+volumes:
+  redis_data:

@@ -1,0 +1,59 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "server/**"
+      - "docker-compose.yml"
+      - ".github/workflows/deploy.yml"
+      # We ignore client/ and extension/ so we don't trigger backend deployments
+      # when only frontend code changes.
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Go to the project directory
+            cd ~/AppliTrack
+
+            # Pull the latest code
+            git pull origin master
+
+            # Make sure Docker is installed (just in case)
+            if ! command -v docker &> /dev/null; then
+              echo "Installing Docker..."
+              sudo apt-get update
+              sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+              sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+              sudo apt-get update
+              sudo apt-get install -y docker-ce docker-compose-plugin
+              sudo usermod -aG docker ubuntu
+            fi
+            
+            # Make sure Docker Compose is available
+            if ! command -v docker-compose &> /dev/null; then
+               sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+               sudo chmod +x /usr/local/bin/docker-compose
+            fi
+
+            # Rebuild and restart the backend and redis containers in the background
+            # using the local postgres database via host.docker.internal (if configured)
+            docker-compose up -d --build
+
+            # Cleanup old unused docker images to save EC2 disk space
+            docker image prune -f
