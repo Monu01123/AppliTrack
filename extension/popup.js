@@ -24,15 +24,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let currentUser = null;
   let currentToken = null;
+  let currentRefreshToken = null;
 
   // 1. Load Settings and check if we're already logged in
-  const { auth_token, user, custom_api_url } = await chrome.storage.local.get(["auth_token", "user", "custom_api_url"]);
+  const { auth_token, refresh_token, user, custom_api_url } = await chrome.storage.local.get(["auth_token", "refresh_token", "user", "custom_api_url"]);
   
   if (custom_api_url) {
     API_BASE = custom_api_url;
   }
   
   if (auth_token && user) {
+    currentRefreshToken = refresh_token;
     setLoggedIn(user, auth_token);
   } else {
     setLoggedOut();
@@ -70,7 +72,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         throw new Error(data.error || "Login failed");
       }
 
-      await chrome.storage.local.set({ auth_token: data.accessToken, user: data.user });
+      await chrome.storage.local.set({ auth_token: data.accessToken, refresh_token: data.refreshToken, user: data.user });
+      currentRefreshToken = data.refreshToken;
       setLoggedIn(data.user, data.accessToken);
     } catch (err) {
       loginError.textContent = err.message;
@@ -83,7 +86,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // 3. Handle Logout
   logoutBtn.addEventListener("click", async () => {
-    await chrome.storage.local.remove(["auth_token", "user"]);
+    await chrome.storage.local.remove(["auth_token", "refresh_token", "user"]);
     setLoggedOut();
   });
 
@@ -123,13 +126,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Attempt silent refresh
         const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken: currentRefreshToken }),
           credentials: "include"
         });
 
         if (refreshRes.ok) {
           const refreshData = await refreshRes.json();
           currentToken = refreshData.accessToken;
-          await chrome.storage.local.set({ auth_token: currentToken });
+          currentRefreshToken = refreshData.refreshToken || currentRefreshToken;
+          await chrome.storage.local.set({ auth_token: currentToken, refresh_token: currentRefreshToken });
           
           // Retry the save request with the new token
           res = await fetch(`${API_BASE}/applications`, {
@@ -142,7 +148,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           });
         } else {
           // If refresh fails, log the user out completely
-          await chrome.storage.local.remove(["auth_token", "user"]);
+          await chrome.storage.local.remove(["auth_token", "refresh_token", "user"]);
           setLoggedOut();
           throw new Error("Session expired. Please log in again.");
         }
@@ -170,6 +176,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   function setLoggedOut() {
     currentUser = null;
     currentToken = null;
+    currentRefreshToken = null;
     loginView.classList.remove("hidden");
     clipperView.classList.add("hidden");
     authStatus.textContent = "Logged Out";

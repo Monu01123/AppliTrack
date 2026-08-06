@@ -218,6 +218,7 @@ const login = async (req, res, next) => {
 
     res.json({
       accessToken,
+      refreshToken, // Also return in JSON for non-web clients (e.g. Chrome Extension)
       user: {
         id: user.id,
         name: user.name,
@@ -282,6 +283,7 @@ const googleLogin = async (req, res, next) => {
 
     res.json({
       accessToken,
+      refreshToken, // Also return in JSON for non-web clients
       user: {
         id: user.id,
         name: user.name,
@@ -301,7 +303,8 @@ const googleLogin = async (req, res, next) => {
 
 const refresh = async (req, res, next) => {
   try {
-    const token = req.cookies.refreshToken;
+    // Fallback to req.body.refreshToken for non-web clients (Chrome Extension)
+    const token = req.cookies.refreshToken || req.body.refreshToken;
     if (!token) {
       return res.status(401).json({ error: "No refresh token" });
     }
@@ -324,7 +327,7 @@ const refresh = async (req, res, next) => {
     const newRefreshToken = generateRefreshToken(user.id, user.tokenVersion);
 
     sendRefreshTokenCookie(res, newRefreshToken);
-    res.json({ accessToken });
+    res.json({ accessToken, refreshToken: newRefreshToken });
   } catch (err) {
     if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
       return res.status(401).json({ error: "Invalid or expired refresh token" });
