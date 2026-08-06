@@ -29,13 +29,13 @@ const generateAccessToken = (userId) => {
   );
 };
 
-// Generates a long-lived refresh token (7 days)
+// Generates a long-lived refresh token (30 days)
 // Stored in an httpOnly cookie — JavaScript on the frontend cannot read it
 const generateRefreshToken = (userId, tokenVersion = 0) => {
   return jwt.sign(
     { userId, tokenVersion },
     process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: "30d" }
   );
 };
 
@@ -46,8 +46,8 @@ const sendRefreshTokenCookie = (res, token) => {
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/api/auth",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
-    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Explicitly tell the browser NOT to delete on exit
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
+    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Explicitly tell the browser NOT to delete on exit
   });
 };
 
