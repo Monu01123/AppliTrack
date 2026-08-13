@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "HireIQ Job Clipper",
-  "version": "1.4",
+  "version": "1.5",
   "description": "Instantly save jobs from LinkedIn, Indeed, and more directly to your HireIQ Tracker.",
   "permissions": [
     "activeTab",
