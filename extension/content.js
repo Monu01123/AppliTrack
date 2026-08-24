@@ -233,13 +233,14 @@ if (window.location.hostname.includes("appli-track-seven.vercel.app") || window.
 
   setInterval(() => {
     const token = localStorage.getItem("hireiq_token");
+    const refreshToken = localStorage.getItem("hireiq_refresh_token");
     const userStr = localStorage.getItem("hireiq_user");
     
     // Only sync if the token exists and is different from the last one we synced
     if (token && userStr && token !== lastSyncedToken) {
       try {
         const user = JSON.parse(userStr);
-        chrome.runtime.sendMessage({ action: "SYNC_AUTH", token, user }, (response) => {
+        chrome.runtime.sendMessage({ action: "SYNC_AUTH", token, refreshToken, user }, (response) => {
           if (response && response.success) {
             lastSyncedToken = token;
             console.log("HireIQ Extension: Successfully synced authentication token!");

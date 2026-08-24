@@ -43,6 +43,7 @@ export const AuthProvider = ({ children }) => {
           setAccessToken(res.data.accessToken);
           setUser(res.data.user);
           localStorage.setItem("hireiq_token", res.data.accessToken);
+          if (res.data.refreshToken) localStorage.setItem("hireiq_refresh_token", res.data.refreshToken);
           localStorage.setItem("hireiq_user", JSON.stringify(res.data.user));
         }
       } catch (err) {
@@ -66,6 +67,7 @@ export const AuthProvider = ({ children }) => {
     setAccessToken(res.data.accessToken);
     setUser(res.data.user);
     localStorage.setItem("hireiq_token", res.data.accessToken);
+    if (res.data.refreshToken) localStorage.setItem("hireiq_refresh_token", res.data.refreshToken);
     localStorage.setItem("hireiq_user", JSON.stringify(res.data.user));
     return res.data;
   };
@@ -76,6 +78,7 @@ export const AuthProvider = ({ children }) => {
     setAccessToken(res.data.accessToken);
     setUser(res.data.user);
     localStorage.setItem("hireiq_token", res.data.accessToken);
+    if (res.data.refreshToken) localStorage.setItem("hireiq_refresh_token", res.data.refreshToken);
     localStorage.setItem("hireiq_user", JSON.stringify(res.data.user));
     return res.data;
   };
@@ -97,6 +100,7 @@ export const AuthProvider = ({ children }) => {
     setAccessToken(null);
     setUser(null);
     localStorage.removeItem("hireiq_token");
+    localStorage.removeItem("hireiq_refresh_token");
     localStorage.removeItem("hireiq_user");
   };
 

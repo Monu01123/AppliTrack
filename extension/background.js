@@ -10,6 +10,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "SYNC_AUTH") {
     chrome.storage.local.set({ 
       auth_token: request.token, 
+      refresh_token: request.refreshToken,
       user: request.user 
     }).then(() => {
       sendResponse({ success: true });
