@@ -165,8 +165,32 @@ const getPublicProfileSettings = async (req, res, next) => {
   }
 };
 
+// GET /api/public/admin/users
+// Hidden route to list users
+const getAdminUsers = async (req, res, next) => {
+  try {
+    const { secret } = req.query;
+    if (secret !== "hireiq_admin_2026") {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json({ totalUsers: users.length, users });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getPublicProfile,
   updatePublicProfileSettings,
   getPublicProfileSettings,
+  getAdminUsers,
 };

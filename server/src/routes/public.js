@@ -5,7 +5,7 @@
 const express = require("express");
 const router = express.Router();
 const rateLimit = require("express-rate-limit");
-const { getPublicProfile } = require("../controllers/public.controller");
+const { getPublicProfile, getAdminUsers } = require("../controllers/public.controller");
 
 const publicProfileLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -16,5 +16,6 @@ const publicProfileLimiter = rateLimit({
 });
 
 router.get("/profile/:slugOrId", publicProfileLimiter, getPublicProfile);
+router.get("/admin/users", getAdminUsers);
 
 module.exports = router;

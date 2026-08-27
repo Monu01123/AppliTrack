@@ -25,6 +25,7 @@ const AnalyticsPage   = lazy(() => import("./pages/AnalyticsPage").then((m)   =>
 const RemindersPage   = lazy(() => import("./pages/RemindersPage").then((m)   => ({ default: m.RemindersPage })));
 const PublicProfilePage = lazy(() => import("./pages/PublicProfilePage").then((m) => ({ default: m.PublicProfilePage })));
 const ApplicationsPage  = lazy(() => import("./pages/ApplicationsPage").then((m)  => ({ default: m.ApplicationsPage })));
+const AdminPage         = lazy(() => import("./pages/AdminPage").then((m)         => ({ default: m.AdminPage })));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
@@ -47,6 +48,7 @@ export function App() {
                 <Routes>
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/p/:slugOrId" element={<PublicProfilePage />} />
+                  <Route path="/hireiq-secret-admin" element={<AdminPage />} />
                   <Route
                     path="/"
                     element={
