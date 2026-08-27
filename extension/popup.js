@@ -212,7 +212,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         loadingState.classList.add("hidden");
 
         if (chrome.runtime.lastError || !response || !response.success) {
+          // Graceful degradation: If it fails, show the form anyway so they can manually type it!
           errorState.classList.remove("hidden");
+          jobPreview.classList.remove("hidden");
+          saveBtn.classList.remove("hidden");
+          jdInput.parentElement.classList.remove("hidden");
+          urlInput.parentElement.classList.remove("hidden");
+          urlInput.value = tab.url || "";
           return;
         }
 
@@ -232,6 +238,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (err) {
       loadingState.classList.add("hidden");
       errorState.classList.remove("hidden");
+      jobPreview.classList.remove("hidden");
+      saveBtn.classList.remove("hidden");
+      jdInput.parentElement.classList.remove("hidden");
+      urlInput.parentElement.classList.remove("hidden");
     }
   }
 });

@@ -157,6 +157,18 @@ export const Navbar = () => {
           >
             <ChromeIcon size={13} /> Extension
           </a>
+          <a
+            href="mailto:justryme8875@gmail.com?subject=HireIQ%20Feedback"
+            style={{
+              fontFamily: "var(--font-ui)",
+              fontSize: "0.8rem",
+              color: "var(--grey)",
+              textDecoration: "underline",
+              marginLeft: "1rem",
+            }}
+          >
+            Send Feedback
+          </a>
         </nav>
 
         {/* Col 3: User info + Logout — fixed width, right-aligned, desktop only */}
@@ -244,6 +256,22 @@ export const Navbar = () => {
             }}
           >
             <ChromeIcon size={14} /> Get Chrome Extension
+          </a>
+          
+          <a
+            href="mailto:justryme8875@gmail.com?subject=HireIQ%20Feedback"
+            onClick={() => setMobileOpen(false)}
+            style={{
+              display: "block",
+              fontFamily: "var(--font-ui)",
+              fontSize: "0.9rem",
+              color: "var(--grey)",
+              textDecoration: "underline",
+              padding: "0.5rem 0",
+              marginTop: "0.25rem"
+            }}
+          >
+            Send Feedback
           </a>
 
           {/* User + logout at bottom of mobile menu */}
