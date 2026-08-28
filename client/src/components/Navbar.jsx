@@ -158,7 +158,9 @@ export const Navbar = () => {
             <ChromeIcon size={13} /> Extension
           </a>
           <a
-            href="mailto:justryme8875@gmail.com?subject=HireIQ%20Feedback"
+            href="https://mail.google.com/mail/?view=cm&fs=1&to=justryme8875@gmail.com&su=HireIQ%20Feedback"
+            target="_blank"
+            rel="noopener noreferrer"
             style={{
               fontFamily: "var(--font-ui)",
               fontSize: "0.8rem",
@@ -259,7 +261,9 @@ export const Navbar = () => {
           </a>
           
           <a
-            href="mailto:justryme8875@gmail.com?subject=HireIQ%20Feedback"
+            href="https://mail.google.com/mail/?view=cm&fs=1&to=justryme8875@gmail.com&su=HireIQ%20Feedback"
+            target="_blank"
+            rel="noopener noreferrer"
             onClick={() => setMobileOpen(false)}
             style={{
               display: "block",
